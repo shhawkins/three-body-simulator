@@ -96,6 +96,11 @@
         background-color: #34495e;
       }
       
+      .button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
       #startButton {
         background-color: #2980b9;
       }
@@ -667,7 +672,6 @@
       
       /* Style the Cinematic Mode button differently */
       #cinematicButton {
-        background-color: #4a148c; /* Deeper purple background */
         border: 1px solid #ffffff !important; /* Thicker white border with !important to override any other styles */
         color: #ffffff;
         font-weight: bold;
@@ -688,7 +692,6 @@
       }
       
       #cinematicButton.active {
-        background-color: #7b1fa2; /* Different active color */
         border: 2px solid #ecf0f1 !important;
         box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
       }
@@ -807,11 +810,11 @@
         </div>
         <div class="control-content" id="controlContent">
           <div class="button-group">
-      <button id="startButton" class="button">Start</button>
+            <button id="startButton" class="button">Start</button>
             <button id="stopButton" class="button">Stop</button>
-      <button id="pauseButton" class="button">Pause</button>
-            <button id="resetLastButton" class="button" style="display: none;">Reset (Previous)</button>
+            <button id="pauseButton" class="button">Pause</button>
             <button id="resetDefaultButton" class="button" style="display: none;">Reset (Default)</button>
+            <button id="resetLastButton" class="button" style="display: none;">Reset (Previous)</button>
             <button id="freePlayButton" class="button">Toggle Borderless</button>
             <button id="toggleTrailsButton" class="button">Hide Trails</button>
           </div>
@@ -884,10 +887,10 @@
           <div class="body-section" style="border-left: 4px solid #d8a0ff;">
             <label>Body 1 Mass:</label>
             <div class="mass-slider-container">
-              <input type="range" id="body1MassSlider" class="mass-slider" min="0.1" max="5" step="0.1" value="1">
+              <input type="range" id="body1MassSlider" class="mass-slider" min="0" max="100" step="1" value="20">
               <span class="mass-value" id="body1MassValue">1.0</span>
             </div>
-            <input type="number" id="body1Mass" value="1" step="0.1" min="0.1" max="5" class="hidden-input">
+            <input type="number" id="body1Mass" value="1" step="0.1" min="0.1" max="100" class="hidden-input">
             
             <div class="velocity-inputs">
               <input type="number" id="body1VelocityX" value="0" step="0.1" class="hidden-input">
@@ -907,10 +910,10 @@
           <div class="body-section" style="border-left: 4px solid #ffb6c1;">
             <label>Body 2 Mass:</label>
             <div class="mass-slider-container">
-              <input type="range" id="body2MassSlider" class="mass-slider" min="0.1" max="5" step="0.1" value="1">
+              <input type="range" id="body2MassSlider" class="mass-slider" min="0" max="100" step="1" value="20">
               <span class="mass-value" id="body2MassValue">1.0</span>
             </div>
-            <input type="number" id="body2Mass" value="1" step="0.1" min="0.1" max="5" class="hidden-input">
+            <input type="number" id="body2Mass" value="1" step="0.1" min="0.1" max="100" class="hidden-input">
             
             <div class="velocity-inputs">
               <input type="number" id="body2VelocityX" value="0" step="0.1" class="hidden-input">
@@ -930,10 +933,10 @@
           <div class="body-section" style="border-left: 4px solid #87cefa;">
             <label>Body 3 Mass:</label>
             <div class="mass-slider-container">
-              <input type="range" id="body3MassSlider" class="mass-slider" min="0.1" max="5" step="0.1" value="1">
+              <input type="range" id="body3MassSlider" class="mass-slider" min="0" max="100" step="1" value="20">
               <span class="mass-value" id="body3MassValue">1.0</span>
             </div>
-            <input type="number" id="body3Mass" value="1" step="0.1" min="0.1" max="5" class="hidden-input">
+            <input type="number" id="body3Mass" value="1" step="0.1" min="0.1" max="100" class="hidden-input">
             
             <div class="velocity-inputs">
               <input type="number" id="body3VelocityX" value="0.5" step="0.1" class="hidden-input">
@@ -964,7 +967,7 @@
       // Constants and configuration
       // ------------------------------------------------
       const BOUNDARY_RADIUS = 60; // Defines the outer circular boundary
-      const G = 0.3; // Gravitational constant
+      const G = 0.3; // Base gravitational constant
       let simulationSpeed = 0.3; // Default simulation speed (increased by 20% from 0.25)
       let freePlayMode = false; // Track if Borderless Mode is active
       const BODY_COLORS = [
@@ -1164,7 +1167,7 @@
       let cinematicMode = false; // Track if cinematic camera mode is enabled
 
       // Trail parameters
-      const MAX_TRAIL_LENGTH = 3000; // Fixed trail length
+      const MAX_TRAIL_LENGTH = 5000; // Fixed trail length
       let trails = [[], [], []];
       let trailMeshes = [null, null, null]; // Store trail meshes
 
@@ -1303,11 +1306,42 @@
           const slider = document.getElementById(`body${i+1}MassSlider`);
           const valueDisplay = document.getElementById(`body${i+1}MassValue`);
           
-          slider.value = masses[i];
-          valueDisplay.textContent = masses[i].toFixed(1);
+          // Convert mass to slider value using the inverse mapping
+          slider.value = massToSliderValue(masses[i]);
+          valueDisplay.textContent = formatMassValue(masses[i]);
           
           // Also update the hidden input (useful for code that might still reference it)
           document.getElementById(`body${i+1}Mass`).value = masses[i];
+        }
+      }
+      
+      // Function to convert slider value (0-100) to actual mass (0.1-100)
+      // This uses a quadratic/exponential mapping to give more precision at lower values
+      function sliderValueToMass(sliderValue) {
+        if (sliderValue <= 0) return 0.1; // Minimum mass
+        
+        // For values 0-50, map to range 0.1-10 (square function for more sensitivity at lower end)
+        if (sliderValue <= 50) {
+          return 0.1 + (9.9 * Math.pow(sliderValue / 50, 2));
+        } 
+        // For values 51-100, map to range 10-100 (linear mapping is fine for larger values)
+        else {
+          return 10 + ((sliderValue - 50) * 90 / 50);
+        }
+      }
+      
+      // Function to convert actual mass (0.1-100) to slider value (0-100)
+      // This is the inverse of the above function
+      function massToSliderValue(mass) {
+        if (mass <= 0.1) return 0;
+        
+        // For masses 0.1-10, use inverse of quadratic function
+        if (mass <= 10) {
+          return Math.round(50 * Math.sqrt((mass - 0.1) / 9.9));
+        } 
+        // For masses 10-100, use inverse of linear function
+        else {
+          return Math.round(50 + ((mass - 10) * 50 / 90));
         }
       }
 
@@ -1629,12 +1663,15 @@
             // Use a tube geometry for more impressive trails
             const points = bodies[i].trail;
             
+            // Calculate tube radius based on body mass
+            const trailRadius = getTrailRadius(bodies[i].mass);
+            
             // Create a smooth curve from points
             const curve = new THREE.CatmullRomCurve3(points);
             const tubeGeometry = new THREE.TubeGeometry(
               curve,
               Math.min(points.length * 2, 200), // Limit segments for performance
-              0.15, // tube radius - thicker for better visibility
+              trailRadius, // Scale tube radius based on mass
               8, // radial segments for roundness
               false // closed
             );
@@ -1688,7 +1725,7 @@
             const glowGeometry = new THREE.TubeGeometry(
               curve,
               Math.min(points.length * 2, 200),
-              0.25, // slightly larger for the glow
+              trailRadius * 1.6, // Scale glow effect proportionally
               8,
               false
             );
@@ -1704,8 +1741,25 @@
       // ------------------------------------------------
       // Function to calculate body radius based on mass
       function getBodyRadius(mass) {
-        // Scale radius with mass
-        return Math.max(0.5, Math.pow(mass, 1/3) * 0.5);
+        // More compressed scaling for masses up to 100
+        // Using logarithmic scaling to avoid bodies getting too large
+        if (mass <= 1) {
+          return Math.max(0.5, Math.pow(mass, 1/3) * 0.45);
+        } else {
+          // Logarithmic scaling for masses > 1
+          return 0.45 + 0.35 * Math.log10(mass);
+        }
+      }
+      
+      // Function to calculate trail radius based on body mass
+      function getTrailRadius(mass) {
+        // More compressed scaling for trail radius
+        if (mass <= 1) {
+          return Math.max(0.1, Math.pow(mass, 1/4) * 0.15);
+        } else {
+          // Logarithmic scaling for masses > 1
+          return 0.15 + 0.08 * Math.log10(mass);
+        }
       }
       
       // Function to calculate forces and update positions
@@ -1740,7 +1794,17 @@
             const distanceSquared = direction.lengthSq();
             
             if (distanceSquared > 0) {
-              const forceMagnitude = G * body1.mass * body2.mass / distanceSquared;
+              // Adjusted gravitational force calculation with scaling to prevent extreme forces
+              // with very large masses
+              const massProduct = body1.mass * body2.mass;
+              let scaleFactor = 1.0;
+              
+              // Scale down force for very large mass products to prevent extreme accelerations
+              if (massProduct > 100) {
+                scaleFactor = 1.0 / Math.log10(massProduct / 10);
+              }
+              
+              const forceMagnitude = G * massProduct / distanceSquared * scaleFactor;
               const force = direction.normalize().multiplyScalar(forceMagnitude);
               
               // Apply forces to bodies (F = ma, so a = F/m)
@@ -2022,6 +2086,10 @@
         collisionOccurred = false;
         simulationTime = 0; // Reset simulation time
         
+        // Disable start button, enable stop button
+        document.getElementById('startButton').disabled = true;
+        document.getElementById('stopButton').disabled = false;
+        
         updateStatusMessage('Running');
         
         // Hide instructions when simulation starts
@@ -2057,6 +2125,10 @@
         isAnimating = false;
         isPaused = false;
         simulationTime = 0;
+        
+        // Enable start button, disable stop button
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('stopButton').disabled = true;
         
         // Show reset options
         document.getElementById('resetLastButton').style.display = 'inline-block';
@@ -2103,20 +2175,15 @@
         simulationTime = 0;
         collisionOccurred = false;
         
+        // Enable start button, disable stop button
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('stopButton').disabled = true;
+        
         // Reset pause button text
         document.getElementById('pauseButton').textContent = 'Pause';
         
-        // Reset Borderless mode
-        if (freePlayMode) {
-          freePlayMode = false;
-          document.getElementById('freePlayButton').classList.remove('active');
-          document.getElementById('freePlayButton').textContent = 'Toggle Borderless';
-          boundaryPlane.visible = true;
-          window.boundaryGrid.visible = true;
-          window.boundaryRing.visible = true;
-          window.largeGrid.visible = false;
-          window.largePlane.visible = false;
-        }
+        // Note: We no longer reset Borderless mode when using Reset (Previous)
+        // This allows the user to maintain their borderless mode preference
         
         updateStatusMessage('Ready');
         
@@ -2132,7 +2199,30 @@
           bodies[i].position.copy(initialPositions[i]);
           bodies[i].velocity.copy(initialVelocities[i]);
           bodies[i].mass = masses[i]; // Restore mass from saved values
-          bodyMeshes[i].position.copy(initialPositions[i]);
+          
+          // If not in free play mode, ensure bodies are within the boundary
+          if (!freePlayMode) {
+            const distanceFromCenter = Math.sqrt(
+              initialPositions[i].x * initialPositions[i].x + 
+              initialPositions[i].z * initialPositions[i].z
+            );
+            
+            const bodyRadius = getBodyRadius(masses[i]);
+            
+            // If body would be outside boundary, move it inside
+            if (distanceFromCenter + bodyRadius > BOUNDARY_RADIUS) {
+              // Calculate angle to maintain direction but reduce distance
+              const angle = Math.atan2(initialPositions[i].z, initialPositions[i].x);
+              const newDistance = BOUNDARY_RADIUS - bodyRadius - 0.1; // Small buffer
+              
+              // Set new position within boundary
+              initialPositions[i].x = newDistance * Math.cos(angle);
+              initialPositions[i].z = newDistance * Math.sin(angle);
+              bodies[i].position.copy(initialPositions[i]);
+            }
+          }
+          
+          bodyMeshes[i].position.copy(bodies[i].position);
           
           // Reset trail
           bodies[i].trail = [];
@@ -2148,6 +2238,24 @@
         
         // Update mass sliders to reflect restored values
         updateMassSliders();
+        
+        // Update visibility of boundary elements based on current mode
+        // This ensures the visual state matches the freePlayMode setting
+        boundaryPlane.visible = !freePlayMode;
+        window.boundaryGrid.visible = !freePlayMode;
+        window.boundaryRing.visible = !freePlayMode;
+        window.largeGrid.visible = freePlayMode;
+        window.largePlane.visible = freePlayMode;
+        
+        // Update the free play button visual state
+        const freePlayButton = document.getElementById('freePlayButton');
+        if (freePlayMode) {
+          freePlayButton.classList.add('active');
+          freePlayButton.textContent = 'Toggle Border';
+        } else {
+          freePlayButton.classList.remove('active');
+          freePlayButton.textContent = 'Toggle Borderless';
+        }
         
         // Update velocity arrows after body meshes are updated
         for (let i = 0; i < 3; i++) {
@@ -2283,7 +2391,11 @@
         });
         
         document.getElementById('sideViewButton').addEventListener('click', function() {
-          setCamera(new THREE.Vector3(75, 0, 0));
+          // Add 3-degree angle to side view (converting to radians)
+          const angleRadians = 3 * (Math.PI / 180);
+          const sideX = 75;
+          const sideY = sideX * Math.tan(angleRadians); // Calculate Y offset for 3-degree angle
+          setCamera(new THREE.Vector3(sideX, sideY, 0));
         });
         
         document.getElementById('angledViewButton').addEventListener('click', function() {
@@ -2405,8 +2517,6 @@
           boundaryPlane.visible = !freePlayMode;
           window.boundaryGrid.visible = !freePlayMode;
           window.boundaryRing.visible = !freePlayMode;
-          
-          // Show/hide the expanded grid and plane
           window.largeGrid.visible = freePlayMode;
           window.largePlane.visible = freePlayMode;
           
@@ -2523,6 +2633,15 @@
         
         // Force an initial render to ensure everything is visible
         renderScene();
+        
+        // Initialize body1MassSlider to match the mass
+        document.getElementById('body1MassSlider').value = massToSliderValue(masses[0]);
+        document.getElementById('body2MassSlider').value = massToSliderValue(masses[1]);
+        document.getElementById('body3MassSlider').value = massToSliderValue(masses[2]);
+        
+        // Set initial button states
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('stopButton').disabled = true;
       }
       
       // Start the initialization
@@ -2626,24 +2745,27 @@
         });
         
         body1Slider.addEventListener('input', function() {
-          const value = parseFloat(this.value);
-          document.getElementById('body1MassValue').textContent = value.toFixed(1);
-          document.getElementById('body1Mass').value = value; // Update hidden input
-          updateBodyMass(0, value);
+          const sliderValue = parseInt(this.value);
+          const massValue = sliderValueToMass(sliderValue);
+          document.getElementById('body1MassValue').textContent = formatMassValue(massValue);
+          document.getElementById('body1Mass').value = massValue; // Update hidden input
+          updateBodyMass(0, massValue);
         });
         
         body2Slider.addEventListener('input', function() {
-          const value = parseFloat(this.value);
-          document.getElementById('body2MassValue').textContent = value.toFixed(1);
-          document.getElementById('body2Mass').value = value; // Update hidden input
-          updateBodyMass(1, value);
+          const sliderValue = parseInt(this.value);
+          const massValue = sliderValueToMass(sliderValue);
+          document.getElementById('body2MassValue').textContent = formatMassValue(massValue);
+          document.getElementById('body2Mass').value = massValue; // Update hidden input
+          updateBodyMass(1, massValue);
         });
         
         body3Slider.addEventListener('input', function() {
-          const value = parseFloat(this.value);
-          document.getElementById('body3MassValue').textContent = value.toFixed(1);
-          document.getElementById('body3Mass').value = value; // Update hidden input
-          updateBodyMass(2, value);
+          const sliderValue = parseInt(this.value);
+          const massValue = sliderValueToMass(sliderValue);
+          document.getElementById('body3MassValue').textContent = formatMassValue(massValue);
+          document.getElementById('body3Mass').value = massValue; // Update hidden input
+          updateBodyMass(2, massValue);
           
           // Ensure Body 3's trail updates when mass changes
           if (isAnimating) {
@@ -2832,6 +2954,10 @@
         isPaused = false;
         simulationTime = 0;
         collisionOccurred = false;
+        
+        // Enable start button, disable stop button
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('stopButton').disabled = true;
         
         // Reset pause button text
         document.getElementById('pauseButton').textContent = 'Pause';
@@ -3077,7 +3203,11 @@
               setCamera(new THREE.Vector3(0, 75, 0.1));
               break;
             case 'side':
-              setCamera(new THREE.Vector3(75, 0, 0));
+              // Add 3-degree angle to side view (converting to radians)
+              const angleRadians = 3 * (Math.PI / 180);
+              const sideX = 75;
+              const sideY = sideX * Math.tan(angleRadians); // Calculate Y offset for 3-degree angle
+              setCamera(new THREE.Vector3(sideX, sideY, 0));
               break;
             case 'follow1':
               followBody(0);
@@ -3119,6 +3249,17 @@
         } else {
           // Otherwise look at the scene center
           camera.lookAt(scene.position);
+        }
+      }
+
+      // Function to format mass value display with appropriate precision
+      function formatMassValue(value) {
+        if (value < 10) {
+          return value.toFixed(1); // One decimal for small values
+        } else if (value < 100) {
+          return value.toFixed(0); // Whole numbers for medium values
+        } else {
+          return value.toFixed(0); // Whole numbers for large values
         }
       }
     </script>
