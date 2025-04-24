@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Three Body Problem Simulator</title>
     <style>
       body {
@@ -777,6 +777,73 @@
       #superWideViewButton:hover {
         background-color: #00838f;
       }
+      
+      /* Mobile and touch device optimizations */
+      @media (max-width: 1024px), (pointer: coarse) {
+        .button, .speed-button, #camera-controls button {
+          padding: 12px 20px;
+          margin: 8px;
+          font-size: 16px;
+        }
+        
+        input[type="range"], input[type="number"] {
+          height: 30px;
+          min-height: 30px;
+        }
+        
+        .mass-slider {
+          height: 12px;
+        }
+        
+        .mass-slider::-webkit-slider-thumb {
+          width: 24px;
+          height: 24px;
+        }
+        
+        #controls, #camera-controls, #mass-controls, .speed-controls {
+          padding: 15px;
+        }
+        
+        .body-section {
+          padding: 12px;
+          margin-bottom: 10px;
+        }
+        
+        .control-header h3, .mass-header h4, .speed-header h4, .camera-header h4 {
+          font-size: 1.2em;
+        }
+        
+        .toggle-controls, .toggle-speed, .toggle-camera, .toggle-mass {
+          font-size: 20px;
+        }
+      }
+      
+      /* iPhone-specific optimizations */
+      @media (max-width: 480px) {
+        #controls {
+          max-width: 90%;
+        }
+        
+        .button-group {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        
+        .speed-controls {
+          width: 90%;
+          max-width: 300px;
+        }
+        
+        #camera-controls {
+          width: 90%;
+          max-width: 300px;
+        }
+        
+        #mass-controls {
+          width: 90%;
+          max-width: 300px;
+        }
+      }
     </style>
     <script
       async
@@ -871,6 +938,15 @@
           <li>Try subtle changes for interesting orbits</li>
           <li>Adjust parameters during simulation</li>
         </ul>
+        <div id="touch-instructions" style="display: none; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px;">
+          <h5>Touch Controls:</h5>
+          <ul>
+            <li>One finger drag: rotate camera</li>
+            <li>Pinch: zoom in/out</li>
+            <li>Tap body or arrow to select</li>
+            <li>Drag to move selected object</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -1012,6 +1088,10 @@
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
       
+      // Touch-friendly settings
+      controls.rotateSpeed = 1.2; // Faster rotation for touch
+      controls.zoomSpeed = 1.3;   // Faster zoom for touch
+      
       // Ensure camera controls are always enabled
       controls.enabled = true;
       controls.enableZoom = true;
@@ -1035,7 +1115,10 @@
       // Create a starfield background
       function createStarfield() {
         const starGeometry = new THREE.BufferGeometry();
-        const starCount = 15000; // Increased from 5000
+        // Detect touch device for performance optimization
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        // Reduce star count on mobile for better performance
+        const starCount = isTouchDevice ? 5000 : 15000;
         const starPositions = [];
         const starSizes = [];
         
@@ -1200,20 +1283,25 @@
           container.appendChild(tooltip);
         }
         
-      for (let i = 0; i < 3; i++) {
+        // Detect if we're on a touch device
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        
+        for (let i = 0; i < 3; i++) {
           // Calculate size based on mass (for visual representation)
           const size = getBodyRadius(masses[i]);
+          // Make objects slightly larger on touch devices for easier interaction
+          const touchSizeFactor = isTouchDevice ? 1.2 : 1.0;
           
           // Create sphere for the body
-          const bodyGeometry = new THREE.SphereGeometry(size, 32, 32);
-        const bodyMaterial = new THREE.MeshPhongMaterial({
+          const bodyGeometry = new THREE.SphereGeometry(size * touchSizeFactor, 32, 32);
+          const bodyMaterial = new THREE.MeshPhongMaterial({
             color: BODY_COLORS[i],
             shininess: 30,
             emissive: new THREE.Color(BODY_COLORS[i]).multiplyScalar(0.2)
-        });
+          });
           
-        const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        bodyMesh.position.copy(initialPositions[i]);
+          const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
+          bodyMesh.position.copy(initialPositions[i]);
           bodyMesh.castShadow = true;
           bodyMesh.receiveShadow = true;
           bodyMesh.userData = { 
@@ -1221,21 +1309,24 @@
             type: 'body' 
           };
           
-        scene.add(bodyMesh);
-        bodyMeshes.push(bodyMesh);
+          scene.add(bodyMesh);
+          bodyMeshes.push(bodyMesh);
 
           // Create velocity arrow
           const arrowDirection = initialVelocities[i].clone().normalize();
           // Create arrows with sufficient length for visibility and interaction
-          const baseLength = 3; // Increased from 2 for better interaction
-          const velocityScale = 4; // Increased from 3 for better visibility
+          // Make arrows slightly larger on touch devices
+          const baseLength = isTouchDevice ? 4 : 3; // Increased for touch devices
+          const velocityScale = isTouchDevice ? 5 : 4; // Increased for touch devices
           let arrowLength = baseLength;
           if (initialVelocities[i].length() > 0) {
             arrowLength = baseLength + initialVelocities[i].length() * velocityScale;
           }
           
+          // Make arrow head larger on touch devices
+          const arrowHeadSize = isTouchDevice ? 0.7 : 0.5;
           const arrowHead = new THREE.Mesh(
-            new THREE.ConeGeometry(0.5, 1.0, 8), // Increased size for easier interaction
+            new THREE.ConeGeometry(arrowHeadSize, arrowHeadSize * 2, 8),
             new THREE.MeshBasicMaterial({ color: BODY_COLORS[i] })
           );
           
@@ -1266,7 +1357,12 @@
             initialPositions[i],
             arrowHeadPosition
           ]);
-          const lineMaterial = new THREE.LineBasicMaterial({ color: BODY_COLORS[i] });
+          // Make line thicker on touch devices
+          const lineWidth = isTouchDevice ? 2 : 1;
+          const lineMaterial = new THREE.LineBasicMaterial({ 
+            color: BODY_COLORS[i],
+            linewidth: lineWidth
+          });
           const line = new THREE.Line(lineGeometry, lineMaterial);
           
           // Add to scene
@@ -1282,10 +1378,10 @@
           });
           
           // Initialize body data
-        bodies.push({
-          position: initialPositions[i].clone(),
-          velocity: initialVelocities[i].clone(),
-          mass: masses[i],
+          bodies.push({
+            position: initialPositions[i].clone(),
+            velocity: initialVelocities[i].clone(),
+            mass: masses[i],
             trail: []
           });
         }
@@ -1581,6 +1677,11 @@
       }
 
       function updateTrails() {
+        // Detect if we're on a touch device
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        // Use fewer segments for performance on mobile
+        const maxSegments = isTouchDevice ? 80 : 200;
+        
         for (let i = 0; i < 3; i++) {
           // Only update if showing trails
           if (!showTrails) {
@@ -1597,8 +1698,9 @@
           }
           
           // Limit trail length
-          if (bodies[i].trail.length > MAX_TRAIL_LENGTH) {
-            bodies[i].trail = bodies[i].trail.slice(-MAX_TRAIL_LENGTH);
+          const maxTrailPoints = isTouchDevice ? 1000 : MAX_TRAIL_LENGTH;
+          if (bodies[i].trail.length > maxTrailPoints) {
+            bodies[i].trail = bodies[i].trail.slice(-maxTrailPoints);
           }
           
           // Ensure there's at least one point in the trail (the current position)
@@ -1633,9 +1735,9 @@
             const curve = new THREE.CatmullRomCurve3(points);
             const tubeGeometry = new THREE.TubeGeometry(
               curve,
-              Math.min(points.length * 2, 200), // Limit segments for performance
+              Math.min(points.length * 2, maxSegments), // Limit segments for performance
               0.15, // tube radius - thicker for better visibility
-              8, // radial segments for roundness
+              isTouchDevice ? 6 : 8, // fewer radial segments on mobile
               false // closed
             );
             
@@ -1678,23 +1780,26 @@
             trailMeshes[i] = trailMesh;
             
             // Add a subtle glow effect for more "shooting star" like appearance
-            const glowMaterial = new THREE.MeshBasicMaterial({
-              color: TRAIL_COLORS[i].start,
-              transparent: true,
-              opacity: 0.3,
-              side: THREE.BackSide
-            });
-            
-            const glowGeometry = new THREE.TubeGeometry(
-              curve,
-              Math.min(points.length * 2, 200),
-              0.25, // slightly larger for the glow
-              8,
-              false
-            );
-            
-            const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-            trailMesh.add(glowMesh); // Add as a child for easy management
+            // Skip glow effect on mobile for better performance
+            if (!isTouchDevice) {
+              const glowMaterial = new THREE.MeshBasicMaterial({
+                color: TRAIL_COLORS[i].start,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.BackSide
+              });
+              
+              const glowGeometry = new THREE.TubeGeometry(
+                curve,
+                Math.min(points.length * 2, maxSegments),
+                0.25, // slightly larger for the glow
+                6,
+                false
+              );
+              
+              const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+              trailMesh.add(glowMesh); // Add as a child for easy management
+            }
           }
         }
       }
@@ -2459,6 +2564,10 @@
       
       // Handle window resize
       function handleWindowResize() {
+        // Detect if we're on a mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isPortrait = window.innerHeight > window.innerWidth;
+        
         // Determine new size based on window dimensions and 16:9 aspect ratio
         let newWidth, newHeight;
         if (window.innerWidth / window.innerHeight > aspectRatio) {
@@ -2469,6 +2578,25 @@
           // Window is taller than 16:9
           newWidth = window.innerWidth;
           newHeight = newWidth / aspectRatio;
+        }
+        
+        // For mobile devices, adjust UI positioning
+        if (isMobile) {
+          // Position controls for better mobile accessibility
+          const controlPanels = document.querySelectorAll('#controls, #speed-controls, #camera-controls, #mass-controls');
+          controlPanels.forEach(panel => {
+            if (panel) {
+              panel.style.maxWidth = isPortrait ? '90vw' : '';
+            }
+          });
+          
+          // Adjust specific panel positions
+          const massControls = document.getElementById('mass-controls');
+          if (massControls && isPortrait) {
+            massControls.style.top = 'auto';
+            massControls.style.bottom = '20px';
+            massControls.style.right = '10px';
+          }
         }
         
         // Update camera
@@ -2571,6 +2699,22 @@
           }
         });
         
+        // Touch events for Body 1 slider
+        body1Slider.addEventListener('touchstart', function(event) {
+          handleTouchStart(event, this, 'Adjust mass of Body 1');
+        });
+        
+        body1Slider.addEventListener('touchend', function(event) {
+          handleTouchEnd(event, this);
+        });
+        
+        body1Slider.addEventListener('input', function() {
+          const value = parseFloat(this.value);
+          document.getElementById('body1MassValue').textContent = value.toFixed(1);
+          document.getElementById('body1Mass').value = value; // Update hidden input
+          updateBodyMass(0, value);
+        });
+        
         body2Slider.addEventListener('mouseover', function(event) {
           showSliderTooltip('Adjust mass of Body 2', event, this);
         });
@@ -2596,6 +2740,22 @@
           if (this.matches(':hover')) {
             showSliderTooltip('Adjust mass of Body 2', event, this);
           }
+        });
+        
+        // Touch events for Body 2 slider
+        body2Slider.addEventListener('touchstart', function(event) {
+          handleTouchStart(event, this, 'Adjust mass of Body 2');
+        });
+        
+        body2Slider.addEventListener('touchend', function(event) {
+          handleTouchEnd(event, this);
+        });
+        
+        body2Slider.addEventListener('input', function() {
+          const value = parseFloat(this.value);
+          document.getElementById('body2MassValue').textContent = value.toFixed(1);
+          document.getElementById('body2Mass').value = value; // Update hidden input
+          updateBodyMass(1, value);
         });
         
         body3Slider.addEventListener('mouseover', function(event) {
@@ -2625,18 +2785,13 @@
           }
         });
         
-        body1Slider.addEventListener('input', function() {
-          const value = parseFloat(this.value);
-          document.getElementById('body1MassValue').textContent = value.toFixed(1);
-          document.getElementById('body1Mass').value = value; // Update hidden input
-          updateBodyMass(0, value);
+        // Touch events for Body 3 slider
+        body3Slider.addEventListener('touchstart', function(event) {
+          handleTouchStart(event, this, 'Adjust mass of Body 3');
         });
         
-        body2Slider.addEventListener('input', function() {
-          const value = parseFloat(this.value);
-          document.getElementById('body2MassValue').textContent = value.toFixed(1);
-          document.getElementById('body2Mass').value = value; // Update hidden input
-          updateBodyMass(1, value);
+        body3Slider.addEventListener('touchend', function(event) {
+          handleTouchEnd(event, this);
         });
         
         body3Slider.addEventListener('input', function() {
@@ -2705,6 +2860,15 @@
           }
         });
         
+        // Touch events for Velocity X input
+        velocityXInput.addEventListener('touchstart', function(event) {
+          handleTouchStart(event, this, 'Adjust X velocity of Body 3');
+        });
+        
+        velocityXInput.addEventListener('touchend', function(event) {
+          handleTouchEnd(event, this);
+        });
+        
         velocityXInput.addEventListener('input', function() {
           const value = parseFloat(this.value);
           document.getElementById('body3VelocityX').value = value;
@@ -2740,6 +2904,15 @@
           }
         });
         
+        // Touch events for Velocity Z input
+        velocityZInput.addEventListener('touchstart', function(event) {
+          handleTouchStart(event, this, 'Adjust Y velocity of Body 3');
+        });
+        
+        velocityZInput.addEventListener('touchend', function(event) {
+          handleTouchEnd(event, this);
+        });
+        
         velocityZInput.addEventListener('input', function() {
           const value = parseFloat(this.value);
           document.getElementById('body3VelocityZ').value = value;
@@ -2767,6 +2940,39 @@
             tooltip.style.top = (rect.top + rect.height/2 - tooltip.offsetHeight/2) + 'px';
           }, 10);
         }
+      }
+      
+      // Helper function for touch events
+      function handleTouchStart(event, element, tooltipText) {
+        // Prevent default touch behavior
+        event.preventDefault();
+        
+        // Show tooltip
+        if (tooltip) {
+          showSliderTooltip(tooltipText, event, element);
+          // For touch devices, let tooltip stay visible a bit longer
+          element.touchTooltipTimeout = setTimeout(() => {
+            hideTooltip();
+          }, 2000);
+        }
+        
+        // Set active state
+        element.isActive = true;
+      }
+      
+      function handleTouchEnd(event, element) {
+        // Clear any existing timeout
+        if (element.touchTooltipTimeout) {
+          clearTimeout(element.touchTooltipTimeout);
+        }
+        
+        // Set inactive state
+        element.isActive = false;
+        
+        // Hide tooltip after a short delay
+        setTimeout(() => {
+          hideTooltip();
+        }, 500);
       }
       
       // Helper function to update mass
@@ -3038,6 +3244,14 @@
           const velocityDisplay = document.getElementById(`body${i+1}RealTimeVelocity`);
           if (velocityDisplay) {
             velocityDisplay.style.display = 'block';
+          }
+        }
+        
+        // Show touch-specific instructions if on a touch device
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+          const touchInstructions = document.getElementById('touch-instructions');
+          if (touchInstructions) {
+            touchInstructions.style.display = 'block';
           }
         }
       }
