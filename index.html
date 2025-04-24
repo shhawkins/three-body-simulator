@@ -1122,46 +1122,6 @@
         user-select: none;
         -webkit-user-select: none;
       }
-      
-      /* Add responsive styles for smaller screens */
-      @media screen and (max-width: 768px) {
-        .button {
-          padding: 8px 12px;
-          font-size: 12px;
-          margin: 2px;
-        }
-        
-        .controls-panel {
-          padding: 8px;
-        }
-        
-        .slider-container {
-          margin: 5px 0;
-        }
-        
-        input[type="range"] {
-          height: 20px;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb {
-          height: 20px;
-          width: 20px;
-        }
-        
-        .button-row {
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        
-        .button-row .button {
-          flex: 0 0 auto;
-          min-width: 80px;
-        }
-        
-        #camera-controls .button {
-          min-width: 60px;
-        }
-      }
     </style>
     <script
       async
@@ -1798,28 +1758,146 @@
         
         // Make drag controls less sensitive on touch devices
         if (isTouchDevice) {
-          currentDragControls.dragThreshold = 5; // Increase threshold for touch devices
+          // Add larger touch areas for draggable objects
+          draggableObjects.forEach(obj => {
+            if (obj.userData.type === 'velocityArrow') {
+              // Make velocity arrows easier to grab on touch devices
+              const scale = 1.5; // 50% larger touch area
+              obj.scale.set(scale, scale, scale);
+            }
+          });
         }
         
-        // Add touch event listeners for better iPhone support
-        renderer.domElement.addEventListener('touchstart', function(event) {
-          if (event.touches.length === 1) {
-            event.preventDefault();
+        currentDragControls.addEventListener('hoveron', function(event) {
+          // Change cursor and show tooltip
+          document.body.style.cursor = 'grab';
+          
+          // Show appropriate tooltip based on object type
+          if (event.object.userData.type === 'body') {
+            showTooltip('Drag to position the body', event);
+          } else if (event.object.userData.type === 'velocityArrow') {
+            showTooltip('Drag to set velocity direction and magnitude', event);
           }
-        }, { passive: false });
+        });
         
-        renderer.domElement.addEventListener('touchmove', function(event) {
-          if (event.touches.length === 1) {
-            event.preventDefault();
-          }
-        }, { passive: false });
+        currentDragControls.addEventListener('hoveroff', function() {
+          // Reset cursor and hide tooltip
+          document.body.style.cursor = 'auto';
+          hideTooltip();
+        });
         
         currentDragControls.addEventListener('dragstart', function(event) {
+          // Temporarily disable orbit controls ONLY while actively dragging
           controls.enabled = false;
+          
+          // Change cursor style
+          document.body.style.cursor = 'grabbing';
+          
+          // Hide tooltip during drag
+          hideTooltip();
+        });
+        
+        currentDragControls.addEventListener('drag', function(event) {
+          const objectType = event.object.userData.type;
+          const bodyIndex = event.object.userData.bodyIndex;
+          
+          if (objectType === 'body') {
+            // Dragging a body
+            const position = event.object.position;
+            
+            // Calculate distance from center
+            const distance = Math.sqrt(position.x * position.x + position.z * position.z);
+            
+            // If outside boundary, constrain to boundary
+            if (distance > BOUNDARY_RADIUS) {
+              const angle = Math.atan2(position.z, position.x);
+              position.x = BOUNDARY_RADIUS * Math.cos(angle);
+              position.z = BOUNDARY_RADIUS * Math.sin(angle);
+            }
+            
+            // Fix Y position to 0 (on the plane)
+            position.y = 0;
+            
+            // Update the corresponding body position
+            bodies[bodyIndex].position.copy(position);
+            initialPositions[bodyIndex].copy(position);
+            
+            // Update velocity arrow position
+            updateVelocityArrow(bodyIndex);
+          } 
+          else if (objectType === 'velocityArrow') {
+            // Dragging a velocity arrow
+            const arrowHead = event.object;
+            const bodyPosition = bodyMeshes[bodyIndex].position;
+            
+            // Fix Y position to maintain horizontal plane
+            arrowHead.position.y = 0;
+            
+            // Calculate new velocity based on the arrow position relative to the body
+            const direction = new THREE.Vector3().subVectors(
+              arrowHead.position,
+              bodyPosition
+            );
+            
+            // Get base length and scale from userData
+            const baseLength = arrowHead.userData.baseLength;
+            const velocityScale = arrowHead.userData.velocityScale;
+            
+            // Calculate actual direction length minus base length
+            const totalLength = direction.length();
+            let velocityMagnitude = 0;
+            
+            if (totalLength > baseLength) {
+              velocityMagnitude = (totalLength - baseLength) / velocityScale;
+            }
+            
+            // Normalize and scale to get new velocity
+            if (direction.length() > 0) {
+              direction.normalize();
+              
+              // Set new velocity
+              const newVelocity = direction.multiplyScalar(velocityMagnitude);
+              bodies[bodyIndex].velocity.copy(newVelocity);
+              initialVelocities[bodyIndex].copy(newVelocity);
+              
+              // Orient arrow head
+              if (direction.length() > 0) {
+                // Calculate a point that continues in the direction from body to arrow
+                const targetLook = arrowHead.position.clone().add(direction);
+                arrowHead.lookAt(targetLook);
+                arrowHead.rotateX(Math.PI / 2);
+              }
+              
+              // Update velocity inputs
+              updateVelocityInputs(bodyIndex, newVelocity);
+            }
+            
+            // Update the line of the arrow
+            updateVelocityArrowLine(bodyIndex);
+          }
+          
+          // Update render
+          renderScene();
         });
         
         currentDragControls.addEventListener('dragend', function(event) {
+          // Always re-enable orbit controls
           controls.enabled = true;
+          
+          // Reset cursor
+          document.body.style.cursor = 'auto';
+          
+          // Update positions and velocities for reset
+          const objectType = event.object.userData.type;
+          const bodyIndex = event.object.userData.bodyIndex;
+          
+          if (objectType === 'body') {
+            initialPositions[bodyIndex].copy(event.object.position);
+          } 
+          else if (objectType === 'velocityArrow') {
+            // Final update of velocity arrow and line
+            updateVelocityArrow(bodyIndex);
+          }
         });
       }
       
@@ -1950,10 +2028,6 @@
           // Initialize trail with current position
           bodies[i].trail = [];
           bodies[i].trail.push(bodies[i].position.clone());
-          
-          // Add a small offset point to ensure valid curve even for stationary bodies
-          const offsetPoint = bodies[i].position.clone().add(new THREE.Vector3(0.01, 0, 0.01));
-          bodies[i].trail.push(offsetPoint);
         }
         
         // Ensure trails are properly visualized if enabled
