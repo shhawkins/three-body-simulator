@@ -1550,6 +1550,8 @@
       const MAX_TRAIL_LENGTH = 5000; // Fixed trail length
       let trails = [[], [], []];
       let trailMeshes = [null, null, null]; // Store trail meshes
+      let trailLength = 200; // Current trail length
+      let trailSegments = 100; // Number of trail segments
 
       // Bodies
       let bodies = [];
@@ -2460,9 +2462,73 @@
       // ------------------------------------------------
       // Animation loop
       // ------------------------------------------------
-      // Modified animate function to use enhanced cinematic mode
+      // Add performance monitoring variables
+      let lastFrameTime = performance.now();
+      let frameCount = 0;
+      let lastFPSUpdate = performance.now();
+      let currentFPS = 0;
+      
+      function updateFPS() {
+        frameCount++;
+        const now = performance.now();
+        if (now - lastFPSUpdate >= 1000) {
+          currentFPS = Math.round((frameCount * 1000) / (now - lastFPSUpdate));
+          frameCount = 0;
+          lastFPSUpdate = now;
+          
+          // Only reduce complexity if FPS drops below 15 (even more lenient threshold)
+          if (currentFPS < 15 && !isPaused) {
+            reduceSimulationComplexity();
+          }
+        }
+      }
+      
+      function reduceSimulationComplexity() {
+        // Reduce trail length very gradually
+        if (trailLength > 100) {
+          trailLength = Math.max(100, trailLength - 10); // Even smaller reduction
+          updateTrails();
+        }
+        
+        // Reduce number of trail segments very gradually
+        if (trailSegments > 50) {
+          trailSegments = Math.max(50, trailSegments - 2); // Even smaller reduction
+          updateTrails();
+        }
+      }
+      
+      function cleanupMemory() {
+        // Clear old trails
+        for (let i = 0; i < 3; i++) {
+          if (trailMeshes[i]) {
+            scene.remove(trailMeshes[i]);
+            trailMeshes[i].geometry.dispose();
+            trailMeshes[i].material.dispose();
+            trailMeshes[i] = null;
+          }
+        }
+        
+        // Force garbage collection if available
+        if (window.gc) {
+          window.gc();
+        }
+        
+        // Recreate trails with minimal reduction
+        trailLength = Math.max(100, trailLength - 10); // Even smaller reduction
+        trailSegments = Math.max(50, trailSegments - 2); // Even smaller reduction
+        updateTrails();
+      }
+      
+      // Modify the existing resetSimulation function
+      const originalResetSimulation = resetSimulation;
+      resetSimulation = function() {
+        cleanupMemory();
+        originalResetSimulation();
+      };
+      
+      // Original animate function with performance monitoring
       function animate() {
-        animationId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
         
         // Continue cinematic camera cuts even when not animating
         if (cinematicMode) {
@@ -2470,6 +2536,14 @@
         }
         
         if (isAnimating && !isPaused) {
+          // Update FPS and check performance
+          updateFPS();
+          
+          // Check memory usage and clean up if needed
+          if (performance.memory && performance.memory.usedJSHeapSize > 500000000) { // 500MB
+            cleanupMemory();
+          }
+          
           // Update physics (with constant time step for stability)
           updatePhysics(simulationSpeed);
           
@@ -2774,6 +2848,14 @@
         document.getElementById('ui-toggle').addEventListener('click', function() {
           document.body.classList.toggle('ui-hidden');
           this.textContent = document.body.classList.contains('ui-hidden') ? 'Show UI' : 'Hide UI';
+          
+          // Sync the cinematic toggle button state
+          const cinematicToggle = document.getElementById('cinematic-toggle');
+          if (cinematicMode) {
+            cinematicToggle.classList.add('active');
+          } else {
+            cinematicToggle.classList.remove('active');
+          }
         });
         
         // Cinematic toggle button functionality
@@ -3751,6 +3833,11 @@
           });
         }
       }
+      
+      // Call the function after DOM is loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        fixIOSSliders();
+      });
     </script>
     
     <button id="ui-toggle">Hide UI</button>
