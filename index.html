@@ -54,7 +54,7 @@
       .ui-hidden .controls-panel,
       .ui-hidden #help-text,
       .ui-hidden #mass-controls,
-      .ui-hidden .speed-controls,
+      .ui-hidden #speedControls,
       .ui-hidden #camera-container,
       .ui-hidden #resetButtonRow,
       .ui-hidden #controls,
@@ -933,6 +933,63 @@
       #superWideViewButton:hover {
         background-color: #00838f;
       }
+      
+      /* Small speed buttons for the main control panel */
+      .speed-button-small {
+        display: inline-block;
+        margin: 2px;
+        padding: 4px 6px;
+        background-color: #2c3e50;
+        color: #fff;
+        font-size: 11px;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      
+      .speed-button-small:hover {
+        background-color: #34495e;
+      }
+      
+      .speed-button-small.speed-active {
+        border: 2px solid #ecf0f1;
+        box-shadow: 0 0 4px rgba(149, 165, 166, 0.7);
+      }
+      
+      .speed-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 8px;
+        padding-top: 5px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      #slowSpeedButton-small {
+        background-color: #1a237e;
+      }
+      
+      #normalSpeedButton-small {
+        background-color: #0d47a1;
+      }
+      
+      #fastSpeedButton-small {
+        background-color: #006064;
+      }
+      
+      #veryFastSpeedButton-small {
+        background-color: #004d40;
+      }
+      
+      #superFastSpeedButton-small {
+        background-color: #33691e;
+      }
+      
+      #speedControls {
+        display: none;
+      }
     </style>
     <script
       async
@@ -980,6 +1037,15 @@
             <div class="button-row">
               <button id="freePlayButton" class="button">Toggle Borderless</button>
               <button id="toggleTrailsButton" class="button">Hide Trails</button>
+            </div>
+            
+            <!-- Row 4: Speed buttons -->
+            <div class="speed-row">
+              <button id="slowSpeedButton-small" class="speed-button-small">Slow</button>
+              <button id="normalSpeedButton-small" class="speed-button-small speed-active">Normal</button>
+              <button id="fastSpeedButton-small" class="speed-button-small">Fast</button>
+              <button id="veryFastSpeedButton-small" class="speed-button-small">V.Fast</button>
+              <button id="superFastSpeedButton-small" class="speed-button-small">S.Fast</button>
             </div>
           </div>
         </div>
@@ -2752,30 +2818,71 @@
           simulationSpeed = 0.18; // Increased by 20% from 0.15
           updateStatusMessage('Slow Speed');
           updateSpeedButtonStyles(this);
+          updateSmallSpeedButtonStyles('slowSpeedButton-small');
         });
         
         document.getElementById('normalSpeedButton').addEventListener('click', function() {
           simulationSpeed = 0.3; // Increased by 20% from 0.25
           updateStatusMessage('Normal Speed');
           updateSpeedButtonStyles(this);
+          updateSmallSpeedButtonStyles('normalSpeedButton-small');
         });
         
         document.getElementById('fastSpeedButton').addEventListener('click', function() {
           simulationSpeed = 0.72; // Increased by 20% from 0.6
           updateStatusMessage('Fast Speed');
           updateSpeedButtonStyles(this);
+          updateSmallSpeedButtonStyles('fastSpeedButton-small');
         });
         
         document.getElementById('veryFastSpeedButton').addEventListener('click', function() {
           simulationSpeed = 1.44; // Increased by 20% from 1.2
           updateStatusMessage('Very Fast Speed');
           updateSpeedButtonStyles(this);
+          updateSmallSpeedButtonStyles('veryFastSpeedButton-small');
         });
         
         document.getElementById('superFastSpeedButton').addEventListener('click', function() {
           simulationSpeed = 2.4; // Increased by 20% from 2.0
           updateStatusMessage('Super Fast Speed');
           updateSpeedButtonStyles(this);
+          updateSmallSpeedButtonStyles('superFastSpeedButton-small');
+        });
+        
+        // Small speed buttons in main control panel
+        document.getElementById('slowSpeedButton-small').addEventListener('click', function() {
+          simulationSpeed = 0.18;
+          updateStatusMessage('Slow Speed');
+          updateSmallSpeedButtonStyles(this.id);
+          updateSpeedButtonStyles(document.getElementById('slowSpeedButton'));
+        });
+        
+        document.getElementById('normalSpeedButton-small').addEventListener('click', function() {
+          simulationSpeed = 0.3;
+          updateStatusMessage('Normal Speed');
+          updateSmallSpeedButtonStyles(this.id);
+          updateSpeedButtonStyles(document.getElementById('normalSpeedButton'));
+        });
+        
+        document.getElementById('fastSpeedButton-small').addEventListener('click', function() {
+          simulationSpeed = 0.72;
+          updateStatusMessage('Fast Speed');
+          updateSmallSpeedButtonStyles(this.id);
+          updateSpeedButtonStyles(document.getElementById('fastSpeedButton'));
+        });
+        
+        document.getElementById('veryFastSpeedButton-small').addEventListener('click', function() {
+          simulationSpeed = 1.44;
+          updateStatusMessage('Very Fast Speed');
+          updateSmallSpeedButtonStyles(this.id);
+          updateSpeedButtonStyles(document.getElementById('veryFastSpeedButton'));
+        });
+        
+        document.getElementById('superFastSpeedButton-small').addEventListener('click', function() {
+          simulationSpeed = 2.4;
+          updateStatusMessage('Super Fast Speed');
+          updateSmallSpeedButtonStyles(this.id);
+          updateSpeedButtonStyles(document.getElementById('superFastSpeedButton'));
         });
         
         // Update the speed button styles to show which one is active
@@ -2784,6 +2891,14 @@
             button.classList.remove('speed-active');
           });
           activeButton.classList.add('speed-active');
+        }
+        
+        // Update small speed button styles
+        function updateSmallSpeedButtonStyles(activeButtonId) {
+          document.querySelectorAll('.speed-button-small').forEach(button => {
+            button.classList.remove('speed-active');
+          });
+          document.getElementById(activeButtonId).classList.add('speed-active');
         }
         
         // Window resize handler
