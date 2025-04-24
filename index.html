@@ -1122,6 +1122,46 @@
         user-select: none;
         -webkit-user-select: none;
       }
+      
+      /* Add responsive styles for smaller screens */
+      @media screen and (max-width: 768px) {
+        .button {
+          padding: 8px 12px;
+          font-size: 12px;
+          margin: 2px;
+        }
+        
+        .controls-panel {
+          padding: 8px;
+        }
+        
+        .slider-container {
+          margin: 5px 0;
+        }
+        
+        input[type="range"] {
+          height: 20px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+          height: 20px;
+          width: 20px;
+        }
+        
+        .button-row {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        
+        .button-row .button {
+          flex: 0 0 auto;
+          min-width: 80px;
+        }
+        
+        #camera-controls .button {
+          min-width: 60px;
+        }
+      }
     </style>
     <script
       async
@@ -1209,13 +1249,15 @@
         <button id="wideViewButton">Wide View</button>
         <button id="superWideViewButton">Super Wide</button>
         <div style="margin-top: 5px;">
-          <button id="followBody1Button">Follow Body 1</button>
-          <button id="followBody2Button">Follow Body 2</button>
-          <button id="followBody3Button">Follow Body 3</button>
+          <button id="followBody1Button">Follow 1</button>
+          <button id="followBody2Button">Follow 2</button>
+          <button id="followBody3Button">Follow 3</button>
+          <button id="viewToFitButton" class="button">View to Fit</button>
           <button id="cinematicButton">Cinematic Mode</button>
         </div>
       </div>
     </div>
+    
     
     <div id="help-text">
       <div class="help-header" id="helpHeader">
@@ -1756,146 +1798,28 @@
         
         // Make drag controls less sensitive on touch devices
         if (isTouchDevice) {
-          // Add larger touch areas for draggable objects
-          draggableObjects.forEach(obj => {
-            if (obj.userData.type === 'velocityArrow') {
-              // Make velocity arrows easier to grab on touch devices
-              const scale = 1.5; // 50% larger touch area
-              obj.scale.set(scale, scale, scale);
-            }
-          });
+          currentDragControls.dragThreshold = 5; // Increase threshold for touch devices
         }
         
-        currentDragControls.addEventListener('hoveron', function(event) {
-          // Change cursor and show tooltip
-          document.body.style.cursor = 'grab';
-          
-          // Show appropriate tooltip based on object type
-          if (event.object.userData.type === 'body') {
-            showTooltip('Drag to position the body', event);
-          } else if (event.object.userData.type === 'velocityArrow') {
-            showTooltip('Drag to set velocity direction and magnitude', event);
+        // Add touch event listeners for better iPhone support
+        renderer.domElement.addEventListener('touchstart', function(event) {
+          if (event.touches.length === 1) {
+            event.preventDefault();
           }
-        });
+        }, { passive: false });
         
-        currentDragControls.addEventListener('hoveroff', function() {
-          // Reset cursor and hide tooltip
-          document.body.style.cursor = 'auto';
-          hideTooltip();
-        });
+        renderer.domElement.addEventListener('touchmove', function(event) {
+          if (event.touches.length === 1) {
+            event.preventDefault();
+          }
+        }, { passive: false });
         
         currentDragControls.addEventListener('dragstart', function(event) {
-          // Temporarily disable orbit controls ONLY while actively dragging
           controls.enabled = false;
-          
-          // Change cursor style
-          document.body.style.cursor = 'grabbing';
-          
-          // Hide tooltip during drag
-          hideTooltip();
-        });
-        
-        currentDragControls.addEventListener('drag', function(event) {
-          const objectType = event.object.userData.type;
-          const bodyIndex = event.object.userData.bodyIndex;
-          
-          if (objectType === 'body') {
-            // Dragging a body
-            const position = event.object.position;
-            
-            // Calculate distance from center
-            const distance = Math.sqrt(position.x * position.x + position.z * position.z);
-            
-            // If outside boundary, constrain to boundary
-            if (distance > BOUNDARY_RADIUS) {
-              const angle = Math.atan2(position.z, position.x);
-              position.x = BOUNDARY_RADIUS * Math.cos(angle);
-              position.z = BOUNDARY_RADIUS * Math.sin(angle);
-            }
-            
-            // Fix Y position to 0 (on the plane)
-            position.y = 0;
-            
-            // Update the corresponding body position
-            bodies[bodyIndex].position.copy(position);
-            initialPositions[bodyIndex].copy(position);
-            
-            // Update velocity arrow position
-            updateVelocityArrow(bodyIndex);
-          } 
-          else if (objectType === 'velocityArrow') {
-            // Dragging a velocity arrow
-            const arrowHead = event.object;
-            const bodyPosition = bodyMeshes[bodyIndex].position;
-            
-            // Fix Y position to maintain horizontal plane
-            arrowHead.position.y = 0;
-            
-            // Calculate new velocity based on the arrow position relative to the body
-            const direction = new THREE.Vector3().subVectors(
-              arrowHead.position,
-              bodyPosition
-            );
-            
-            // Get base length and scale from userData
-            const baseLength = arrowHead.userData.baseLength;
-            const velocityScale = arrowHead.userData.velocityScale;
-            
-            // Calculate actual direction length minus base length
-            const totalLength = direction.length();
-            let velocityMagnitude = 0;
-            
-            if (totalLength > baseLength) {
-              velocityMagnitude = (totalLength - baseLength) / velocityScale;
-            }
-            
-            // Normalize and scale to get new velocity
-            if (direction.length() > 0) {
-              direction.normalize();
-              
-              // Set new velocity
-              const newVelocity = direction.multiplyScalar(velocityMagnitude);
-              bodies[bodyIndex].velocity.copy(newVelocity);
-              initialVelocities[bodyIndex].copy(newVelocity);
-              
-              // Orient arrow head
-              if (direction.length() > 0) {
-                // Calculate a point that continues in the direction from body to arrow
-                const targetLook = arrowHead.position.clone().add(direction);
-                arrowHead.lookAt(targetLook);
-                arrowHead.rotateX(Math.PI / 2);
-              }
-              
-              // Update velocity inputs
-              updateVelocityInputs(bodyIndex, newVelocity);
-            }
-            
-            // Update the line of the arrow
-            updateVelocityArrowLine(bodyIndex);
-          }
-          
-          // Update render
-          renderScene();
         });
         
         currentDragControls.addEventListener('dragend', function(event) {
-          // Always re-enable orbit controls
           controls.enabled = true;
-          
-          // Reset cursor
-          document.body.style.cursor = 'auto';
-          
-          // Update positions and velocities for reset
-          const objectType = event.object.userData.type;
-          const bodyIndex = event.object.userData.bodyIndex;
-          
-          if (objectType === 'body') {
-            initialPositions[bodyIndex].copy(event.object.position);
-          } 
-          else if (objectType === 'velocityArrow') {
-            // Final update of velocity arrow and line
-            updateVelocityArrow(bodyIndex);
-          }
         });
       }
       
@@ -2026,6 +1950,10 @@
           // Initialize trail with current position
           bodies[i].trail = [];
           bodies[i].trail.push(bodies[i].position.clone());
+          
+          // Add a small offset point to ensure valid curve even for stationary bodies
+          const offsetPoint = bodies[i].position.clone().add(new THREE.Vector3(0.01, 0, 0.01));
+          bodies[i].trail.push(offsetPoint);
         }
         
         // Ensure trails are properly visualized if enabled
@@ -2556,9 +2484,14 @@
           if (isFollowing && !cinematicMode) {
             // Determine which body to follow
             let bodyToFollow = bodies[followingBodyIndex || 0];
-            const offset = new THREE.Vector3(0, 15, 25);
-            camera.position.copy(bodyToFollow.position).add(offset);
-            camera.lookAt(bodyToFollow.position);
+            
+            // Only update camera position if not zooming
+            if (!controls.isUserInteracting) {
+              const currentDistance = camera.position.distanceTo(bodyToFollow.position);
+              const direction = new THREE.Vector3(0, 0.5, 1).normalize();
+              camera.position.copy(bodyToFollow.position).add(direction.multiplyScalar(currentDistance));
+              camera.lookAt(bodyToFollow.position);
+            }
             controls.target.copy(bodyToFollow.position);
           }
         }
@@ -2796,11 +2729,16 @@
         
         // Don't disable cinematic mode when following a body
         
-        const offset = new THREE.Vector3(0, 15, 25);
-        camera.position.copy(bodies[bodyIndex].position).add(offset);
+        // Set default close-up view
+        const defaultDistance = 25;
+        const direction = new THREE.Vector3(0, 0.5, 1).normalize();
+        camera.position.copy(bodies[bodyIndex].position).add(direction.multiplyScalar(defaultDistance));
         camera.lookAt(bodies[bodyIndex].position);
         
         controls.target.copy(bodies[bodyIndex].position);
+        controls.enabled = true; // Ensure controls are enabled
+        controls.minDistance = 5; // Allow closer zoom
+        controls.maxDistance = 100; // Allow further zoom
         controls.update();
         
         renderScene();
@@ -2952,6 +2890,9 @@
         document.getElementById('superWideViewButton').addEventListener('click', function() {
           setCamera(new THREE.Vector3(150, 150, 150));
         });
+        
+        // Add View to Fit button listener
+        document.getElementById('viewToFitButton').addEventListener('click', viewToFit);
         
         // Follow body controls
         document.getElementById('followBody1Button').addEventListener('click', function() {
@@ -3706,7 +3647,7 @@
       // Enhanced cinematic mode with camera cuts
       let lastCameraCutTime = 0;
       let currentCameraView = 'angled';
-      const cameraCutInterval = 5000; // Time between camera cuts in ms
+      const CUT_INTERVAL = 5000; // Time between camera cuts in ms
 
       function applyCinematicCameraMovement() {
         if (!cinematicMode) return;
@@ -3720,29 +3661,45 @@
         camera.position.z = camera.position.z + Math.cos(time) * 0.05;
         
         // Occasionally cut to new camera views
-        if (timeSinceLastCut > cameraCutInterval) {
-          // Choose a random camera view that's different from the current one
-          const views = ['angled', 'top', 'side', 'follow1', 'follow2', 'follow3', 'wide'];
-          let newView;
+        if (timeSinceLastCut >= CUT_INTERVAL) {
+          // Check if current view has bodies in frame
+          const bodiesInFrame = checkBodiesInFrame();
           
-          do {
-            newView = views[Math.floor(Math.random() * views.length)];
-          } while (newView === currentCameraView);
+          if (!bodiesInFrame) {
+            // If no bodies in frame, try a different view
+            const availableViews = ['top', 'side', 'wide', 'angled', 'fit', 'follow1', 'follow2', 'follow3'];
+            const currentViewIndex = availableViews.indexOf(currentCameraView);
+            const nextViewIndex = (currentViewIndex + 1) % availableViews.length;
+            currentCameraView = availableViews[nextViewIndex];
+          } else {
+            // If bodies are in frame, randomly choose a new view
+            const views = ['angled', 'top', 'side', 'follow1', 'follow2', 'follow3', 'wide', 'fit'];
+            let newView;
+            do {
+              newView = views[Math.floor(Math.random() * views.length)];
+            } while (newView === currentCameraView);
+            currentCameraView = newView;
+          }
           
-          // Set the new camera view
-          switch (newView) {
-            case 'angled':
-              setAngledView();
-              break;
+          // Apply the selected view
+          switch (currentCameraView) {
             case 'top':
               setCamera(new THREE.Vector3(0, 75, 0.1));
               break;
             case 'side':
-              // Add 3-degree angle to side view (converting to radians)
               const angleRadians = 3 * (Math.PI / 180);
               const sideX = 75;
-              const sideY = sideX * Math.tan(angleRadians); // Calculate Y offset for 3-degree angle
+              const sideY = sideX * Math.tan(angleRadians);
               setCamera(new THREE.Vector3(sideX, sideY, 0));
+              break;
+            case 'wide':
+              setCamera(new THREE.Vector3(100, 100, 100));
+              break;
+            case 'angled':
+              setAngledView();
+              break;
+            case 'fit':
+              viewToFit();
               break;
             case 'follow1':
               followBody(0);
@@ -3753,37 +3710,9 @@
             case 'follow3':
               followBody(2);
               break;
-            case 'wide':
-              setCamera(new THREE.Vector3(100, 100, 100));
-              break;
           }
           
-          // Save the current view and time
-          currentCameraView = newView;
           lastCameraCutTime = now;
-          
-          // Keep cinematic mode active regardless of view changes
-          cinematicMode = true;
-          document.getElementById('cinematicButton').classList.add('active');
-        }
-        
-        // Always look at what we should be looking at
-        if (isFollowing) {
-          // If following a body, keep looking at it
-          const bodyToFollow = bodies[followingBodyIndex];
-          
-          // Add cinematic wobble to the follow offset
-          const wobbleX = Math.sin(time * 0.8) * 2;
-          const wobbleY = Math.cos(time * 0.7) * 1.5;
-          const wobbleZ = Math.sin(time * 0.9) * 2;
-          
-          const offset = new THREE.Vector3(wobbleX, 15 + wobbleY, 25 + wobbleZ);
-          camera.position.copy(bodyToFollow.position).add(offset);
-          camera.lookAt(bodyToFollow.position);
-          controls.target.copy(bodyToFollow.position);
-        } else {
-          // Otherwise look at the scene center
-          camera.lookAt(scene.position);
         }
       }
 
@@ -3799,7 +3728,6 @@
       }
 
       window.onload = function() {
-        init();
         setupScene();
         initControls();
         
@@ -3838,6 +3766,115 @@
       document.addEventListener('DOMContentLoaded', function() {
         fixIOSSliders();
       });
+
+      // Add camera panning variables
+      let isPanning = false;
+      let panStart = new THREE.Vector2();
+      let panEnd = new THREE.Vector2();
+      let panDelta = new THREE.Vector2();
+      
+      // Add view to fit function
+      function viewToFit() {
+        // Disable follow mode when using View to Fit
+        isFollowing = false;
+        followingBodyIndex = null;
+        
+        // Calculate the bounding box of all bodies
+        const box = new THREE.Box3();
+        bodies.forEach(body => {
+          box.expandByPoint(new THREE.Vector3(body.position.x, body.position.y, body.position.z));
+        });
+        
+        // Calculate center and size
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        
+        // Calculate distance based on the largest dimension
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const distance = maxDim * 2; // Adjust multiplier to change zoom level
+        
+        // Position camera
+        const cameraPosition = new THREE.Vector3(
+          center.x + distance,
+          center.y + distance,
+          center.z + distance
+        );
+        
+        // Look at center
+        camera.position.copy(cameraPosition);
+        camera.lookAt(center);
+        
+        // Update controls
+        controls.target.copy(center);
+        controls.update();
+        
+        renderScene();
+      }
+      
+      // Modify mouse/touch event handlers
+      function onPointerDown(event) {
+        if (event.shiftKey) {
+          isPanning = true;
+          panStart.set(event.clientX, event.clientY);
+          return;
+        }
+        // ... rest of your existing pointer down code ...
+      }
+      
+      function onPointerMove(event) {
+        if (isPanning) {
+          panEnd.set(event.clientX, event.clientY);
+          panDelta.subVectors(panEnd, panStart);
+          
+          // Convert screen delta to world space movement
+          const movementX = panDelta.x * 0.01;
+          const movementY = panDelta.y * 0.01;
+          
+          // Move camera
+          camera.position.x -= movementX;
+          camera.position.y += movementY;
+          controls.target.x -= movementX;
+          controls.target.y += movementY;
+          
+          panStart.copy(panEnd);
+          return;
+        }
+        // ... rest of your existing pointer move code ...
+      }
+      
+      function onPointerUp(event) {
+        if (isPanning) {
+          isPanning = false;
+          return;
+        }
+        // ... rest of your existing pointer up code ...
+      }
+      
+      function checkBodiesInFrame() {
+        const frustum = new THREE.Frustum();
+        frustum.setFromProjectionMatrix(
+          new THREE.Matrix4().multiplyMatrices(
+            camera.projectionMatrix,
+            camera.matrixWorldInverse
+          )
+        );
+        
+        let bodiesInView = 0;
+        bodies.forEach(body => {
+          const position = new THREE.Vector3(
+            body.position.x,
+            body.position.y,
+            body.position.z
+          );
+          if (frustum.containsPoint(position)) {
+            bodiesInView++;
+          }
+        });
+        
+        return bodiesInView > 0;
+      }
+      
+
     </script>
     
     <button id="ui-toggle">Hide UI</button>
