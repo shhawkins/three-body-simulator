@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Three Body Problem Simulator</title>
     <style>
       body {
@@ -16,6 +18,130 @@
         justify-content: center;
         align-items: center;
         height: 100vh;
+        touch-action: manipulation; /* Prevents double-tap to zoom */
+      }
+      
+      #container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: auto;
+      }
+      
+      #ui-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        background-color: rgba(30, 39, 46, 0.85);
+        color: #ecf0f1;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 14px;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s ease;
+      }
+      
+      #ui-toggle:hover {
+        background-color: rgba(40, 49, 56, 0.9);
+      }
+      
+      .ui-hidden .controls-panel,
+      .ui-hidden #help-text,
+      .ui-hidden #mass-controls,
+      .ui-hidden .speed-controls,
+      .ui-hidden #camera-container,
+      .ui-hidden #resetButtonRow,
+      .ui-hidden #controls,
+      .ui-hidden #camera-controls {
+        display: none !important;
+      }
+      
+      /* Mobile and touch styles */
+      @media (pointer: coarse) {
+        .button {
+          padding: 12px 18px !important;
+          margin: 6px !important;
+          min-width: 80px;
+        }
+        
+        .button-row {
+          justify-content: center;
+          width: 100%;
+        }
+        
+        /* Ensure all buttons are visible */
+        #controls {
+          max-width: 95% !important;
+        }
+        
+        .mass-slider {
+          height: 30px !important;
+        }
+        
+        .mass-slider::-webkit-slider-thumb {
+          width: 24px !important;
+          height: 24px !important;
+        }
+        
+        input[type="number"], input[type="range"] {
+          padding: 8px !important;
+        }
+        
+        #controls, #mass-controls, #camera-controls, #speed-controls {
+          max-width: none !important;
+          width: 90% !important;
+        }
+        
+        .toggle-controls, .toggle-speed, .toggle-camera, .toggle-mass {
+          font-size: 24px !important;
+          padding: 8px !important;
+        }
+      }
+      
+      /* iPad-specific adjustments */
+      @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+        #controls {
+          top: 20px;
+          left: 20px;
+          max-width: 360px !important;
+        }
+        
+        #mass-controls {
+          top: 20px;
+          right: 20px;
+          max-width: 360px !important;
+          max-height: 90vh;
+        }
+        
+        #camera-controls {
+          bottom: 20px;
+          left: 20px;
+          max-width: 360px !important;
+        }
+        
+        .speed-controls {
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          max-width: 440px !important;
+        }
+        
+        #help-text {
+          bottom: 20px;
+          right: 20px;
+          width: 300px;
+        }
+        
+        .button {
+          padding: 10px 16px !important;
+          font-size: 16px !important;
+        }
       }
       
       /* Fixed 16:9 aspect ratio container */
@@ -321,6 +447,33 @@
       
       .button-group {
         margin-bottom: 15px;
+      }
+      
+      .button-row {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+        min-height: 40px; /* Ensure row maintains height even when buttons are hidden */
+      }
+      
+      .button-row:last-child {
+        margin-bottom: 0;
+      }
+      
+      .button-row .button {
+        margin: 0 5px 5px 5px;
+      }
+      
+      /* iPad-specific adjustments for button rows */
+      @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+        .button-row {
+          justify-content: center;
+        }
+        
+        .button-row .button {
+          min-width: 100px;
+        }
       }
       
       .preset-config {
@@ -810,13 +963,24 @@
         </div>
         <div class="control-content" id="controlContent">
           <div class="button-group">
-            <button id="startButton" class="button">Start</button>
-            <button id="stopButton" class="button">Stop</button>
-            <button id="pauseButton" class="button">Pause</button>
-            <button id="resetDefaultButton" class="button" style="display: none;">Reset (Default)</button>
-            <button id="resetLastButton" class="button" style="display: none;">Reset (Previous)</button>
-            <button id="freePlayButton" class="button">Toggle Borderless</button>
-            <button id="toggleTrailsButton" class="button">Hide Trails</button>
+            <!-- Row 1: Start, Stop, Pause -->
+            <div class="button-row">
+              <button id="startButton" class="button">Start</button>
+              <button id="stopButton" class="button">Stop</button>
+              <button id="pauseButton" class="button">Pause</button>
+            </div>
+            
+            <!-- Row 2: Reset buttons -->
+            <div class="button-row" id="resetButtonRow" style="display: none;">
+              <button id="resetDefaultButton" class="button">Reset (Default)</button>
+              <button id="resetLastButton" class="button">Reset (Previous)</button>
+            </div>
+            
+            <!-- Row 3: Toggle Borderless and Hide Trails -->
+            <div class="button-row">
+              <button id="freePlayButton" class="button">Toggle Borderless</button>
+              <button id="toggleTrailsButton" class="button">Hide Trails</button>
+            </div>
           </div>
         </div>
     </div>
@@ -871,6 +1035,7 @@
         <ul>
           <li>Click and drag to rotate view</li>
           <li>Scroll to zoom in/out</li>
+          <li>The orbit is stable by default</li>
           <li>Try subtle changes for interesting orbits</li>
           <li>Adjust parameters during simulation</li>
         </ul>
@@ -1014,6 +1179,23 @@
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
+      
+      // Configure touch controls
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      if (isTouchDevice) {
+        controls.rotateSpeed = 0.7; // Slower rotation for more precision on touch
+        controls.zoomSpeed = 1.2;   // Slightly faster zoom on touch
+        controls.touchStart = function(event) {
+          // Handle multitouch interactions more intuitively
+          if (event.touches.length === 2) {
+            // Two-finger touch - force zoom instead of rotate
+            this.handleTouchStartDolly(event);
+          } else {
+            // Single-finger touch - normal behavior
+            this.handleTouchStartRotate(event);
+          }
+        };
+      }
       
       // Ensure camera controls are always enabled
       controls.enabled = true;
@@ -1358,6 +1540,9 @@
           currentDragControls = null;
         }
         
+        // Detect if we're on a touch device
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
         // Get all draggable objects (bodies and arrow heads)
         const draggableObjects = [...bodyMeshes];
         
@@ -1368,6 +1553,18 @@
         
         // Create new drag controls
         currentDragControls = new DragControls(draggableObjects, camera, renderer.domElement);
+        
+        // Make drag controls less sensitive on touch devices
+        if (isTouchDevice) {
+          // Add larger touch areas for draggable objects
+          draggableObjects.forEach(obj => {
+            if (obj.userData.type === 'velocityArrow') {
+              // Make velocity arrows easier to grab on touch devices
+              const scale = 1.5; // 50% larger touch area
+              obj.scale.set(scale, scale, scale);
+            }
+          });
+        }
         
         currentDragControls.addEventListener('hoveron', function(event) {
           // Change cursor and show tooltip
@@ -1569,18 +1766,41 @@
           
           // Position tooltip near the mouse/object
           const rect = renderer.domElement.getBoundingClientRect();
-          const mouseX = event.object.position.x;
-          const mouseY = event.object.position.z;
           
-          // Convert 3D position to screen position
-          const vector = new THREE.Vector3(mouseX, 0, mouseY);
-          vector.project(camera);
+          // Use either mouse event or touch event coordinates
+          let clientX, clientY;
+          if (event.type && event.type.startsWith('touch')) {
+            // Touch event - use the first touch point
+            if (event.touches && event.touches.length > 0) {
+              clientX = event.touches[0].clientX;
+              clientY = event.touches[0].clientY;
+            } else {
+              // Fallback to object position for touch events without coordinates
+              const mouseX = event.object.position.x;
+              const mouseY = event.object.position.z;
+              
+              // Convert 3D position to screen position
+              const vector = new THREE.Vector3(mouseX, 0, mouseY);
+              vector.project(camera);
+              
+              clientX = (vector.x * 0.5 + 0.5) * rect.width + rect.left;
+              clientY = -(vector.y * 0.5 - 0.5) * rect.height + rect.top;
+            }
+          } else {
+            // Use object position for hover events
+            const mouseX = event.object.position.x;
+            const mouseY = event.object.position.z;
+            
+            // Convert 3D position to screen position
+            const vector = new THREE.Vector3(mouseX, 0, mouseY);
+            vector.project(camera);
+            
+            clientX = (vector.x * 0.5 + 0.5) * rect.width + rect.left;
+            clientY = -(vector.y * 0.5 - 0.5) * rect.height + rect.top;
+          }
           
-          const x = (vector.x * 0.5 + 0.5) * rect.width + rect.left;
-          const y = -(vector.y * 0.5 - 0.5) * rect.height + rect.top;
-          
-          tooltip.style.left = x + 10 + 'px';
-          tooltip.style.top = y + 10 + 'px';
+          tooltip.style.left = clientX + 10 + 'px';
+          tooltip.style.top = clientY + 10 + 'px';
         }
       }
       
@@ -1893,7 +2113,8 @@
         
         collisionOccurred = true;
         
-        // Show reset buttons
+        // Show reset button row
+        document.getElementById('resetButtonRow').style.display = 'flex';
         document.getElementById('resetLastButton').style.display = 'inline-block';
         document.getElementById('resetDefaultButton').style.display = 'inline-block';
         
@@ -1913,6 +2134,11 @@
         ).multiplyScalar(0.5);
         
         createExplosionEffect(collisionPoint);
+        
+        // Update UI state
+        document.getElementById('startButton').disabled = true;
+        document.getElementById('stopButton').disabled = true;
+        updateStatusMessage('Collision detected!');
       }
       
       // Handle body going outside boundary
@@ -1921,7 +2147,8 @@
         
         collisionOccurred = true;
         
-        // Show reset buttons
+        // Show reset button row
+        document.getElementById('resetButtonRow').style.display = 'flex';
         document.getElementById('resetLastButton').style.display = 'inline-block';
         document.getElementById('resetDefaultButton').style.display = 'inline-block';
         
@@ -1936,6 +2163,11 @@
         
         // Visual effect for boundary violation
         createBoundaryEffect(bodies[index].position);
+        
+        // Update UI state
+        document.getElementById('startButton').disabled = true;
+        document.getElementById('stopButton').disabled = true;
+        updateStatusMessage('Boundary violation!');
       }
       
       // Create explosion effect at collision
@@ -2073,8 +2305,8 @@
       // Handle simulation state changes: start, stop, pause, reset
       function startSimulation() {
         if (collisionOccurred) {
-          // Reset to default configuration instead of just resetting to previous state
-          resetDefault();
+          // Don't automatically reset, just show the reset buttons
+          document.getElementById('resetButtonRow').style.display = 'flex';
           return; // Return early if collision occurred
         }
         
@@ -2092,12 +2324,8 @@
         
         updateStatusMessage('Running');
         
-        // Hide instructions when simulation starts
-        document.getElementById('help-text').classList.add('hidden');
-        
-        // Hide reset buttons when simulation starts
-        document.getElementById('resetLastButton').style.display = 'none';
-        document.getElementById('resetDefaultButton').style.display = 'none';
+        // Hide reset button row when simulation starts
+        document.getElementById('resetButtonRow').style.display = 'none';
         
         // Hide velocity arrows when simulation starts
         for (let i = 0; i < velocityArrows.length; i++) {
@@ -2131,16 +2359,14 @@
         document.getElementById('stopButton').disabled = true;
         
         // Show reset options
-        document.getElementById('resetLastButton').style.display = 'inline-block';
-        document.getElementById('resetDefaultButton').style.display = 'inline-block';
+        document.getElementById('resetButtonRow').style.display = 'flex';
+        document.getElementById('resetLastButton').style.display = 'flex';
+        document.getElementById('resetDefaultButton').style.display = 'flex';
         
         // Reset pause button text
         document.getElementById('pauseButton').textContent = 'Pause';
         
         updateStatusMessage('Stopped');
-        
-        // Show instructions when simulation stops
-        document.getElementById('help-text').classList.remove('hidden');
         
         // Show velocity arrows when simulation stops
         for (let i = 0; i < velocityArrows.length; i++) {
@@ -2156,13 +2382,6 @@
         
         // Update button text based on state
         document.getElementById('pauseButton').textContent = isPaused ? 'Play' : 'Pause';
-        
-        // Show/hide instructions based on pause state
-        if (isPaused) {
-          document.getElementById('help-text').classList.remove('hidden');
-        } else {
-          document.getElementById('help-text').classList.add('hidden');
-        }
         
         updateStatusMessage(isPaused ? 'Paused' : 'Running');
       }
@@ -2187,10 +2406,8 @@
         
         updateStatusMessage('Ready');
         
-        // Show instructions when simulation resets
-        document.getElementById('help-text').classList.remove('hidden');
-        
         // Hide reset buttons
+        document.getElementById('resetButtonRow').style.display = 'none';
         document.getElementById('resetLastButton').style.display = 'none';
         document.getElementById('resetDefaultButton').style.display = 'none';
         
@@ -2353,6 +2570,12 @@
           const toggleButton = document.getElementById('toggleMassButton');
           massControls.classList.toggle('collapsed');
           toggleButton.textContent = massControls.classList.contains('collapsed') ? '▲' : '▼';
+        });
+        
+        // UI toggle functionality
+        document.getElementById('ui-toggle').addEventListener('click', function() {
+          document.body.classList.toggle('ui-hidden');
+          this.textContent = document.body.classList.contains('ui-hidden') ? 'Show UI' : 'Hide UI';
         });
         
         // Simulation controls
@@ -2565,6 +2788,33 @@
         
         // Window resize handler
         window.addEventListener('resize', handleWindowResize);
+        
+        // Orientation change handler (for tablets/mobile)
+        window.addEventListener('orientationchange', function() {
+          setTimeout(() => {
+            // Delay execution to allow the browser to complete the orientation change
+            handleWindowResize();
+            
+            // Additional iPad-specific adjustments
+            const isLandscape = window.innerWidth > window.innerHeight;
+            
+            // Adjust UI elements based on orientation
+            if (isLandscape) {
+              // Landscape orientation - spread controls horizontally
+              if (document.getElementById('mass-controls')) {
+                document.getElementById('mass-controls').style.maxHeight = '80vh';
+              }
+            } else {
+              // Portrait orientation - stack controls vertically
+              if (document.getElementById('mass-controls')) {
+                document.getElementById('mass-controls').style.maxHeight = '40vh';
+              }
+            }
+            
+            // Force a render to update the scene
+            renderScene();
+          }, 300); // Short delay to ensure screen dimensions have updated
+        });
       }
       
       // Handle window resize
@@ -2662,210 +2912,128 @@
         const body2Slider = document.getElementById('body2MassSlider');
         const body3Slider = document.getElementById('body3MassSlider');
         
-        // Setup tooltip events for each slider
-        body1Slider.addEventListener('mouseover', function(event) {
-          showSliderTooltip('Adjust mass of Body 1', event, this);
-        });
-        
-        body1Slider.addEventListener('mouseout', function() {
-          if (!this.isActive) {
-            hideTooltip();
-          }
-        });
-        
-        body1Slider.addEventListener('mousedown', function() {
-          this.isActive = true;
-        });
-        
-        body1Slider.addEventListener('mouseup', function() {
-          this.isActive = false;
-          if (!this.matches(':hover')) {
-            hideTooltip();
-          }
-        });
-        
-        body1Slider.addEventListener('mousemove', function(event) {
-          if (this.matches(':hover')) {
-            showSliderTooltip('Adjust mass of Body 1', event, this);
-          }
-        });
-        
-        body2Slider.addEventListener('mouseover', function(event) {
-          showSliderTooltip('Adjust mass of Body 2', event, this);
-        });
-        
-        body2Slider.addEventListener('mouseout', function() {
-          if (!this.isActive) {
-            hideTooltip();
-          }
-        });
-        
-        body2Slider.addEventListener('mousedown', function() {
-          this.isActive = true;
-        });
-        
-        body2Slider.addEventListener('mouseup', function() {
-          this.isActive = false;
-          if (!this.matches(':hover')) {
-            hideTooltip();
-          }
-        });
-        
-        body2Slider.addEventListener('mousemove', function(event) {
-          if (this.matches(':hover')) {
-            showSliderTooltip('Adjust mass of Body 2', event, this);
-          }
-        });
-        
-        body3Slider.addEventListener('mouseover', function(event) {
-          showSliderTooltip('Adjust mass of Body 3', event, this);
-        });
-        
-        body3Slider.addEventListener('mouseout', function() {
-          if (!this.isActive) {
-            hideTooltip();
-          }
-        });
-        
-        body3Slider.addEventListener('mousedown', function() {
-          this.isActive = true;
-        });
-        
-        body3Slider.addEventListener('mouseup', function() {
-          this.isActive = false;
-          if (!this.matches(':hover')) {
-            hideTooltip();
-          }
-        });
-        
-        body3Slider.addEventListener('mousemove', function(event) {
-          if (this.matches(':hover')) {
-            showSliderTooltip('Adjust mass of Body 3', event, this);
-          }
-        });
-        
-        body1Slider.addEventListener('input', function() {
-          const sliderValue = parseInt(this.value);
-          const massValue = sliderValueToMass(sliderValue);
-          document.getElementById('body1MassValue').textContent = formatMassValue(massValue);
-          document.getElementById('body1Mass').value = massValue; // Update hidden input
-          updateBodyMass(0, massValue);
-        });
-        
-        body2Slider.addEventListener('input', function() {
-          const sliderValue = parseInt(this.value);
-          const massValue = sliderValueToMass(sliderValue);
-          document.getElementById('body2MassValue').textContent = formatMassValue(massValue);
-          document.getElementById('body2Mass').value = massValue; // Update hidden input
-          updateBodyMass(1, massValue);
-        });
-        
-        body3Slider.addEventListener('input', function() {
-          const sliderValue = parseInt(this.value);
-          const massValue = sliderValueToMass(sliderValue);
-          document.getElementById('body3MassValue').textContent = formatMassValue(massValue);
-          document.getElementById('body3Mass').value = massValue; // Update hidden input
-          updateBodyMass(2, massValue);
+        // Function to handle both mouse and touch events for sliders
+        function setupSliderEvents(slider, bodyIndex, tooltipText) {
+          // Mouse events
+          slider.addEventListener('mouseover', function(event) {
+            showSliderTooltip(tooltipText, event, this);
+          });
           
-          // Ensure Body 3's trail updates when mass changes
-          if (isAnimating) {
-            // Force a new trail point for Body 3 even if it hasn't moved
-            const body = bodies[2];
-            
-            // Only force special trail handling if the body was initially stationary
-            if (body.velocity.length() <= 0.001) {
-              // Create an artificial trail anyway, just for visual representation
-              // This helps with the visual bug where Body 3 doesn't show a trail initially
-              
-              // Reset the trail with current position
-              body.trail = [];
-              body.trail.push(body.position.clone());
-              
-              // Add a few points in a small circle to ensure a visible trail
-              for (let i = 0; i < 5; i++) {
-                const angle = i * Math.PI / 12;
-                const radius = 0.1;
-                const x = body.position.x + Math.cos(angle) * radius;
-                const z = body.position.z + Math.sin(angle) * radius;
-                body.trail.push(new THREE.Vector3(x, body.position.y, z));
-              }
-              
-              // Update trails immediately
-              if (showTrails) {
-                updateTrails();
-              }
+          slider.addEventListener('mouseout', function() {
+            if (!this.isActive) {
+              hideTooltip();
             }
-          }
-        });
+          });
+          
+          slider.addEventListener('mousedown', function() {
+            this.isActive = true;
+          });
+          
+          slider.addEventListener('mouseup', function() {
+            this.isActive = false;
+            if (!this.matches(':hover')) {
+              hideTooltip();
+            }
+          });
+          
+          slider.addEventListener('mousemove', function(event) {
+            if (this.matches(':hover')) {
+              showSliderTooltip(tooltipText, event, this);
+            }
+          });
+          
+          // Touch events
+          slider.addEventListener('touchstart', function(event) {
+            this.isActive = true;
+            showSliderTooltip(tooltipText, event, this);
+            event.preventDefault(); // Prevent scrolling while touching slider
+          });
+          
+          slider.addEventListener('touchend', function() {
+            this.isActive = false;
+            hideTooltip();
+          });
+          
+          slider.addEventListener('touchmove', function(event) {
+            showSliderTooltip(tooltipText, event, this);
+            event.preventDefault(); // Prevent scrolling while adjusting slider
+          });
+          
+          // Input event for value changes
+          slider.addEventListener('input', function() {
+            const sliderValue = parseInt(this.value);
+            const massValue = sliderValueToMass(sliderValue);
+            document.getElementById(`body${bodyIndex+1}MassValue`).textContent = formatMassValue(massValue);
+            document.getElementById(`body${bodyIndex+1}Mass`).value = massValue;
+            updateBodyMass(bodyIndex, massValue);
+          });
+        }
+        
+        // Setup events for each slider
+        setupSliderEvents(body1Slider, 0, 'Adjust mass of Body 1');
+        setupSliderEvents(body2Slider, 1, 'Adjust mass of Body 2');
+        setupSliderEvents(body3Slider, 2, 'Adjust mass of Body 3');
         
         // Velocity X input
         const velocityXInput = document.getElementById('body3VelocityX');
-        velocityXInput.addEventListener('mouseover', function(event) {
-          showSliderTooltip('Adjust X velocity of Body 3', event, this);
-        });
-        
-        velocityXInput.addEventListener('mouseout', function() {
-          if (!this.isActive) {
-            hideTooltip();
-          }
-        });
-        
-        velocityXInput.addEventListener('mousedown', function() {
-          this.isActive = true;
-        });
-        
-        velocityXInput.addEventListener('mouseup', function() {
-          this.isActive = false;
-          if (!this.matches(':hover')) {
-            hideTooltip();
-          }
-        });
-        
-        velocityXInput.addEventListener('mousemove', function(event) {
-          if (this.matches(':hover')) {
-            showSliderTooltip('Adjust X velocity of Body 3', event, this);
-          }
-        });
-        
-        velocityXInput.addEventListener('input', function() {
-          const value = parseFloat(this.value);
+        setupInputEvents(velocityXInput, 'Adjust X velocity of Body 3', function(value) {
           document.getElementById('body3VelocityX').value = value;
           updateBodyVelocity(2, 'x', value);
         });
         
         // Velocity Z input
         const velocityZInput = document.getElementById('body3VelocityZ');
-        velocityZInput.addEventListener('mouseover', function(event) {
-          showSliderTooltip('Adjust Y velocity of Body 3', event, this);
+        setupInputEvents(velocityZInput, 'Adjust Y velocity of Body 3', function(value) {
+          document.getElementById('body3VelocityZ').value = value;
+          updateBodyVelocity(2, 'z', value);
+        });
+      }
+      
+      // Helper function to set up events for input elements
+      function setupInputEvents(inputElement, tooltipText, changeCallback) {
+        // Mouse events
+        inputElement.addEventListener('mouseover', function(event) {
+          showSliderTooltip(tooltipText, event, this);
         });
         
-        velocityZInput.addEventListener('mouseout', function() {
+        inputElement.addEventListener('mouseout', function() {
           if (!this.isActive) {
             hideTooltip();
           }
         });
         
-        velocityZInput.addEventListener('mousedown', function() {
+        inputElement.addEventListener('mousedown', function() {
           this.isActive = true;
         });
         
-        velocityZInput.addEventListener('mouseup', function() {
+        inputElement.addEventListener('mouseup', function() {
           this.isActive = false;
           if (!this.matches(':hover')) {
             hideTooltip();
           }
         });
         
-        velocityZInput.addEventListener('mousemove', function(event) {
+        inputElement.addEventListener('mousemove', function(event) {
           if (this.matches(':hover')) {
-            showSliderTooltip('Adjust Y velocity of Body 3', event, this);
+            showSliderTooltip(tooltipText, event, this);
           }
         });
         
-        velocityZInput.addEventListener('input', function() {
+        // Touch events
+        inputElement.addEventListener('touchstart', function(event) {
+          this.isActive = true;
+          showSliderTooltip(tooltipText, event, this);
+        });
+        
+        inputElement.addEventListener('touchend', function() {
+          this.isActive = false;
+          hideTooltip();
+        });
+        
+        // Input event
+        inputElement.addEventListener('input', function() {
           const value = parseFloat(this.value);
-          document.getElementById('body3VelocityZ').value = value;
-          updateBodyVelocity(2, 'z', value);
+          changeCallback(value);
         });
       }
       
@@ -2974,10 +3142,8 @@
           window.largePlane.visible = false;
         }
         
-        // Show instructions when simulation resets to default
-        document.getElementById('help-text').classList.remove('hidden');
-        
         // Hide reset buttons
+        document.getElementById('resetButtonRow').style.display = 'none';
         document.getElementById('resetLastButton').style.display = 'none';
         document.getElementById('resetDefaultButton').style.display = 'none';
         
@@ -3262,6 +3428,24 @@
           return value.toFixed(0); // Whole numbers for large values
         }
       }
+
+      window.onload = function() {
+        init();
+        setupScene();
+        initControls();
+        
+        // Hide reset button row initially
+        document.getElementById('resetButtonRow').style.display = 'none';
+        
+        // Ensure help content is collapsed by default
+        document.getElementById('helpContent').classList.add('collapsed');
+        document.getElementById('toggleHelpButton').textContent = '▲';
+        
+        // Set initial status message
+        updateStatusMessage('Ready');
+      };
     </script>
+    
+    <button id="ui-toggle">Hide UI</button>
   </body>
 </html>
