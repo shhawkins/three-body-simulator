@@ -3046,9 +3046,6 @@
       let lastCameraCutTime = 0;
       let currentCameraView = 'angled';
       const cameraCutInterval = 5000; // Time between camera cuts in ms
-      let cinematicTimeOffset = Math.random() * 1000; // Random offset for varied timing
-      let targetLookPosition = new THREE.Vector3(0, 0, 0); // Where the camera is trying to look
-      let currentFocusBody = -1; // No body focused initially
 
       function applyCinematicCameraMovement() {
         if (!cinematicMode) return;
@@ -3056,56 +3053,10 @@
         const now = Date.now();
         const timeSinceLastCut = now - lastCameraCutTime;
         
-        // Apply more sophisticated continuous movement regardless of camera mode
-        // Different frequencies for each axis create more organic motion
-        const time = now * 0.0001 + cinematicTimeOffset;
-        
-        // Subtle breathing/floating effect with varied frequency and amplitude
-        const breathingX = Math.sin(time * 0.6) * 0.04;
-        const breathingY = Math.cos(time * 0.5) * 0.035;
-        const breathingZ = Math.sin(time * 0.7) * 0.05;
-        
-        // Add a secondary oscillation for more complexity
-        const secondaryX = Math.sin(time * 1.2) * 0.02;
-        const secondaryY = Math.cos(time * 0.9) * 0.015;
-        const secondaryZ = Math.sin(time * 1.5) * 0.025;
-        
-        // Combine primary and secondary movements
-        camera.position.x += breathingX + secondaryX;
-        camera.position.y += breathingY + secondaryY;
-        camera.position.z += breathingZ + secondaryZ;
-        
-        // Subtle rotation drift - extremely subtle to avoid disorientation
-        const rotationSpeed = 0.001; // Very slow rotation
-        controls.rotateLeft(Math.sin(time * 0.3) * rotationSpeed);
-        controls.rotateUp(Math.cos(time * 0.4) * rotationSpeed * 0.5); // Half speed for vertical
-        
-        // Occasional subtle change in focus within the frame without camera cuts
-        // This happens more frequently than camera cuts but is very subtle
-        if (Math.random() < 0.003 && !isFollowing) { // 0.3% chance per frame
-          // Choose a random body to focus on without changing position
-          const bodyIndex = Math.floor(Math.random() * 3);
-          
-          // Only change if it's a different body
-          if (currentFocusBody !== bodyIndex) {
-            // Smoothly move the look target without changing camera position
-            targetLookPosition = bodies[bodyIndex].position.clone();
-            currentFocusBody = bodyIndex;
-          }
-        }
-        
-        // If we have a target look position, gradually move the camera's focus point
-        if (currentFocusBody >= 0 && !isFollowing) {
-          // Update the target position to match the body's current position
-          targetLookPosition.copy(bodies[currentFocusBody].position);
-          
-          // Gradually adjust the camera's look target (very subtle effect)
-          const currentLookAt = controls.target.clone();
-          const newLookAt = currentLookAt.lerp(targetLookPosition, 0.01); // Very slow adjustment
-          
-          // Apply the new look target
-          controls.target.copy(newLookAt);
-        }
+        // Apply subtle continuous movement regardless of camera mode
+        const time = now * 0.0001;
+        camera.position.x = camera.position.x + Math.sin(time) * 0.05;
+        camera.position.z = camera.position.z + Math.cos(time) * 0.05;
         
         // Occasionally cut to new camera views
         if (timeSinceLastCut > cameraCutInterval) {
@@ -3117,45 +3068,28 @@
             newView = views[Math.floor(Math.random() * views.length)];
           } while (newView === currentCameraView);
           
-          // Reset focus when changing views
-          currentFocusBody = -1;
-          
           // Set the new camera view
           switch (newView) {
             case 'angled':
-              setCamera(new THREE.Vector3(
-                50 * 0.85 + (Math.random() * 10 - 5), // Add some variation
-                50 * 0.85 + (Math.random() * 8 - 4),
-                50 * 0.85 + (Math.random() * 10 - 5)
-              ));
+              setAngledView();
               break;
             case 'top':
-              setCamera(new THREE.Vector3(
-                (Math.random() * 6 - 3), // Small random X offset
-                75 + (Math.random() * 10 - 5), // Varied height
-                0.1 + (Math.random() * 4) // Small Z offset
-              ));
+              setCamera(new THREE.Vector3(0, 75, 0.1));
               break;
             case 'side':
-              setCamera(new THREE.Vector3(
-                75 + (Math.random() * 10 - 5), // Varied distance
-                (Math.random() * 8 - 4), // Small Y offset
-                (Math.random() * 10 - 5) // Z offset
-              ));
+              setCamera(new THREE.Vector3(75, 0, 0));
               break;
             case 'follow1':
+              followBody(0);
+              break;
             case 'follow2':
+              followBody(1);
+              break;
             case 'follow3':
-              // Extract body index from view name
-              const bodyToFollow = parseInt(newView.charAt(newView.length - 1)) - 1;
-              followBodyCinematic(bodyToFollow);
+              followBody(2);
               break;
             case 'wide':
-              setCamera(new THREE.Vector3(
-                100 + (Math.random() * 20 - 10),
-                100 + (Math.random() * 20 - 10),
-                100 + (Math.random() * 20 - 10)
-              ));
+              setCamera(new THREE.Vector3(100, 100, 100));
               break;
           }
           
@@ -3163,43 +3097,29 @@
           currentCameraView = newView;
           lastCameraCutTime = now;
           
-          // Generate a new random time offset for varied movement patterns
-          cinematicTimeOffset = Math.random() * 1000;
-          
           // Keep cinematic mode active regardless of view changes
           cinematicMode = true;
           document.getElementById('cinematicButton').classList.add('active');
         }
         
-        // Always update controls for smooth camera motion
-        controls.update();
-      }
-      
-      // Enhanced follow body function specifically for cinematic mode
-      function followBodyCinematic(bodyIndex) {
-        isFollowing = true;
-        followingBodyIndex = bodyIndex;
-        currentFocusBody = -1;
-        
-        const bodyToFollow = bodies[bodyIndex];
-        
-        // Create a more interesting follow position with slight randomness
-        const angleOffset = Math.random() * Math.PI * 0.5 - Math.PI * 0.25; // Random angle within ±45°
-        const distanceVariation = 25 + Math.random() * 10; // Distance from body: 25-35
-        const heightVariation = 15 + Math.random() * 10; // Height: 15-25
-        
-        // Calculate offset with some randomness for more varied shots
-        const xOffset = Math.sin(angleOffset) * distanceVariation;
-        const zOffset = Math.cos(angleOffset) * distanceVariation;
-        
-        // Create a unique camera position for this follow
-        const offset = new THREE.Vector3(xOffset, heightVariation, zOffset);
-        camera.position.copy(bodyToFollow.position).add(offset);
-        camera.lookAt(bodyToFollow.position);
-        
-        // Update controls target for smoother adjustments
-        controls.target.copy(bodyToFollow.position);
-        controls.update();
+        // Always look at what we should be looking at
+        if (isFollowing) {
+          // If following a body, keep looking at it
+          const bodyToFollow = bodies[followingBodyIndex];
+          
+          // Add cinematic wobble to the follow offset
+          const wobbleX = Math.sin(time * 0.8) * 2;
+          const wobbleY = Math.cos(time * 0.7) * 1.5;
+          const wobbleZ = Math.sin(time * 0.9) * 2;
+          
+          const offset = new THREE.Vector3(wobbleX, 15 + wobbleY, 25 + wobbleZ);
+          camera.position.copy(bodyToFollow.position).add(offset);
+          camera.lookAt(bodyToFollow.position);
+          controls.target.copy(bodyToFollow.position);
+        } else {
+          // Otherwise look at the scene center
+          camera.lookAt(scene.position);
+        }
       }
     </script>
   </body>
