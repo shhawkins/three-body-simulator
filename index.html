@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<<<<<<< HEAD
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <title>Three Body Problem Simulator</title>
     <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
@@ -13,9 +12,6 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
     <link rel="manifest" href="favicon_io/site.webmanifest">
     <link rel="shortcut icon" href="favicon_io/favicon.ico">
-=======
-    <title>Three Body Problem Simulator</title>
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
     <style>
       body {
         margin: 0;
@@ -61,7 +57,6 @@
         background-color: rgba(40, 49, 56, 0.9);
       }
       
-<<<<<<< HEAD
       #cinematic-toggle {
         position: fixed;
         bottom: 20px;
@@ -92,8 +87,6 @@
         display: block; /* Show when UI is hidden */
       }
       
-=======
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
       .ui-hidden .controls-panel,
       .ui-hidden #help-text,
       .ui-hidden #mass-controls,
@@ -108,30 +101,20 @@
       /* Mobile and touch styles */
       @media (pointer: coarse) {
         .button {
-<<<<<<< HEAD
           padding: 10px 14px !important;
           margin: 5px !important;
           min-width: 70px;
           font-size: 14px !important;
-=======
-          padding: 12px 18px !important;
-          margin: 6px !important;
-          min-width: 80px;
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
         }
         
         .button-row {
           justify-content: center;
           width: 100%;
-<<<<<<< HEAD
           flex-wrap: wrap;
-=======
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
         }
         
         /* Ensure all buttons are visible */
         #controls {
-<<<<<<< HEAD
           max-width: 90% !important;
           overflow-y: auto;
           max-height: 70vh;
@@ -148,27 +131,10 @@
         
         input[type="number"], input[type="range"] {
           padding: 6px !important;
-=======
-          max-width: 95% !important;
-        }
-        
-        .mass-slider {
-          height: 30px !important;
-        }
-        
-        .mass-slider::-webkit-slider-thumb {
-          width: 24px !important;
-          height: 24px !important;
-        }
-        
-        input[type="number"], input[type="range"] {
-          padding: 8px !important;
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
         }
         
         #controls, #mass-controls, #camera-controls, #speed-controls {
           max-width: none !important;
-<<<<<<< HEAD
           width: 85% !important;
           font-size: 14px;
         }
@@ -228,14 +194,6 @@
             max-height: 60dvh;
             max-width: 35% !important;
           }
-=======
-          width: 90% !important;
-        }
-        
-        .toggle-controls, .toggle-speed, .toggle-camera, .toggle-mass {
-          font-size: 24px !important;
-          padding: 8px !important;
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
         }
       }
       
@@ -1196,15 +1154,9 @@
           <div class="button-group">
             <!-- Row 1: Start, Stop, Pause -->
             <div class="button-row">
-<<<<<<< HEAD
-      <button id="startButton" class="button">Start</button>
-            <button id="stopButton" class="button">Stop</button>
-      <button id="pauseButton" class="button">Pause</button>
-=======
               <button id="startButton" class="button">Start</button>
               <button id="stopButton" class="button">Stop</button>
               <button id="pauseButton" class="button">Pause</button>
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
             </div>
             
             <!-- Row 2: Reset buttons -->
@@ -1216,11 +1168,7 @@
             <!-- Row 3: Toggle Borderless and Hide Trails -->
             <div class="button-row">
               <button id="freePlayButton" class="button">Toggle Borderless</button>
-<<<<<<< HEAD
-            <button id="toggleTrailsButton" class="button">Hide Trails</button>
-=======
               <button id="toggleTrailsButton" class="button">Hide Trails</button>
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
             </div>
             
             <!-- Row 4: Speed buttons -->
@@ -2026,15 +1974,6 @@
               clientY = event.touches[0].clientY;
             } else {
               // Fallback to object position for touch events without coordinates
-<<<<<<< HEAD
-          const mouseX = event.object.position.x;
-          const mouseY = event.object.position.z;
-          
-          // Convert 3D position to screen position
-          const vector = new THREE.Vector3(mouseX, 0, mouseY);
-          vector.project(camera);
-          
-=======
               const mouseX = event.object.position.x;
               const mouseY = event.object.position.z;
               
@@ -2042,7 +1981,6 @@
               const vector = new THREE.Vector3(mouseX, 0, mouseY);
               vector.project(camera);
               
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
               clientX = (vector.x * 0.5 + 0.5) * rect.width + rect.left;
               clientY = -(vector.y * 0.5 - 0.5) * rect.height + rect.top;
             }
@@ -2838,7 +2776,6 @@
           this.textContent = document.body.classList.contains('ui-hidden') ? 'Show UI' : 'Hide UI';
         });
         
-<<<<<<< HEAD
         // Cinematic toggle button functionality
         document.getElementById('cinematic-toggle').addEventListener('click', function() {
           cinematicMode = !cinematicMode;
@@ -2854,7 +2791,31 @@
               }
           }
           
-=======
+          if (cinematicMode) {
+            updateStatusMessage('Cinematic Mode Enabled');
+            // Initialize the last cut time to now
+            lastCameraCutTime = Date.now();
+            // Set the current camera view based on current state
+            if (isFollowing) {
+              currentCameraView = `follow${followingBodyIndex + 1}`;
+            } else {
+              // Try to detect which view we're in based on camera position
+              const pos = camera.position;
+              if (Math.abs(pos.x) < 1 && pos.y > 70) {
+                currentCameraView = 'top';
+              } else if (pos.x > 70 && Math.abs(pos.y) < 1) {
+                currentCameraView = 'side';
+              } else if (pos.x > 90 && pos.y > 90) {
+                currentCameraView = 'wide';
+              } else {
+                currentCameraView = 'angled';
+              }
+            }
+          } else {
+            updateStatusMessage('Cinematic Mode Disabled');
+          }
+        });
+        
         // Simulation controls
         document.getElementById('startButton').addEventListener('click', startSimulation);
         document.getElementById('stopButton').addEventListener('click', stopSimulation);
@@ -2928,7 +2889,6 @@
           cinematicMode = !cinematicMode;
           this.classList.toggle('active');
           
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
           if (cinematicMode) {
             updateStatusMessage('Cinematic Mode Enabled');
             // Initialize the last cut time to now
@@ -2954,16 +2914,6 @@
           }
         });
         
-<<<<<<< HEAD
-        // Simulation controls
-        document.getElementById('startButton').addEventListener('click', startSimulation);
-        document.getElementById('stopButton').addEventListener('click', stopSimulation);
-        document.getElementById('resetLastButton').addEventListener('click', resetSimulation);
-        document.getElementById('resetDefaultButton').addEventListener('click', resetDefault);
-        document.getElementById('pauseButton').addEventListener('click', pauseSimulation);
-        
-=======
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
         // Borderless mode toggle
         document.getElementById('freePlayButton').addEventListener('click', function() {
           freePlayMode = !freePlayMode;
@@ -3035,110 +2985,6 @@
           renderScene();
         });
         
-<<<<<<< HEAD
-        // Trail toggle
-        document.getElementById('toggleTrailsButton').addEventListener('click', function() {
-          showTrails = !showTrails;
-          
-          document.getElementById('toggleTrailsButton').textContent = 
-            showTrails ? 'Hide Trails' : 'Show Trails';
-          
-          // If showing trails, update them to show the full path
-          if (showTrails) {
-            updateTrails();
-          } else {
-            // Hide trails by removing them from scene
-          for (let i = 0; i < 3; i++) {
-              if (trailMeshes[i]) {
-                scene.remove(trailMeshes[i]);
-                trailMeshes[i] = null;
-              }
-            }
-          }
-          
-          renderScene();
-        });
-        
-        // Camera views
-        document.getElementById('topViewButton').addEventListener('click', function() {
-          setCamera(new THREE.Vector3(0, 75, 0.1));
-        });
-        
-        document.getElementById('sideViewButton').addEventListener('click', function() {
-          // Add 3-degree angle to side view (converting to radians)
-          const angleRadians = 3 * (Math.PI / 180);
-          const sideX = 75;
-          const sideY = sideX * Math.tan(angleRadians); // Calculate Y offset for 3-degree angle
-          setCamera(new THREE.Vector3(sideX, sideY, 0));
-        });
-        
-        document.getElementById('angledViewButton').addEventListener('click', function() {
-          setAngledView();
-        });
-        
-        document.getElementById('wideViewButton').addEventListener('click', function() {
-          setCamera(new THREE.Vector3(100, 100, 100));
-        });
-        
-        document.getElementById('superWideViewButton').addEventListener('click', function() {
-          setCamera(new THREE.Vector3(150, 150, 150));
-        });
-        
-        // Follow body controls
-        document.getElementById('followBody1Button').addEventListener('click', function() {
-          followBody(0);
-        });
-        
-        document.getElementById('followBody2Button').addEventListener('click', function() {
-          followBody(1);
-        });
-        
-        document.getElementById('followBody3Button').addEventListener('click', function() {
-          followBody(2);
-        });
-        
-        // Cinematic mode toggle (the one in the main UI)
-        document.getElementById('cinematicButton').addEventListener('click', function() {
-          cinematicMode = !cinematicMode;
-          this.classList.toggle('active');
-          
-          // Sync with the floating cinematic toggle
-          const cinematicToggle = document.getElementById('cinematic-toggle');
-          if (cinematicToggle) {
-              if (cinematicMode) {
-                  cinematicToggle.classList.add('active');
-              } else {
-                  cinematicToggle.classList.remove('active');
-              }
-          }
-          
-          if (cinematicMode) {
-            updateStatusMessage('Cinematic Mode Enabled');
-            // Initialize the last cut time to now
-            lastCameraCutTime = Date.now();
-            // Set the current camera view based on current state
-            if (isFollowing) {
-              currentCameraView = `follow${followingBodyIndex + 1}`;
-            } else {
-              // Try to detect which view we're in based on camera position
-              const pos = camera.position;
-              if (Math.abs(pos.x) < 1 && pos.y > 70) {
-                currentCameraView = 'top';
-              } else if (pos.x > 70 && Math.abs(pos.y) < 1) {
-                currentCameraView = 'side';
-              } else if (pos.x > 90 && pos.y > 90) {
-                currentCameraView = 'wide';
-              } else {
-                currentCameraView = 'angled';
-              }
-            }
-          } else {
-            updateStatusMessage('Cinematic Mode Disabled');
-          }
-        });
-        
-=======
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
         // Speed controls
         document.getElementById('slowSpeedButton').addEventListener('click', function() {
           simulationSpeed = 0.18; // Increased by 20% from 0.15
@@ -3908,11 +3754,6 @@
     </script>
     
     <button id="ui-toggle">Hide UI</button>
-<<<<<<< HEAD
     <button id="cinematic-toggle">Cinematic Mode</button>
   </body>
 </html>
-=======
-  </body>
-</html>
->>>>>>> 6d1de03b5919de60ea69fe2df407f532b4e5d950
